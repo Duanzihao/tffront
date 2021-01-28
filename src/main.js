@@ -5,9 +5,11 @@ import App from './App'
 import router from './router'
 import "leaflet/dist/leaflet.css";
 import utils from './utils'
-import { Button } from 'ant-design-vue'
+import './plugins/element.js'
+import ElementUI from 'element-ui';
+import 'element-ui/lib/theme-chalk/index.css';
 
-Vue.use(Button);
+Vue.use(ElementUI);
 Vue.config.productionTip = false
 Vue.prototype.$utils = utils
 /* eslint-disable no-new */

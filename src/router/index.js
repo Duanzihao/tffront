@@ -2,26 +2,26 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import HelloWorld from '../components/HelloWorld'
 import TestPage from "../components/TestPage";
-import Map from "../components/Map";
+import TyphoonMap from "../components/TyphoonMap";
 
 Vue.use(Router)
 
 export default new Router({
   routes: [
     {
-      path: '/',
+      path: '/HelloWorld',
       name: 'HelloWorld',
       component: HelloWorld
     },
     {
-      path: '/test',
+      path: '/Test',
       name: 'TestPage',
       component: TestPage
     },
     {
-      path: '/map',
-      name: 'Map',
-      component: Map
+      path: '/',
+      name: 'TyphoonMap',
+      component: TyphoonMap
     }
   ]
 })
