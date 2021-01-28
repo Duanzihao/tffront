@@ -16,9 +16,16 @@
                   type="year"
                   placeholder="选择年"
                   style="width: auto"
-                  value-format="yyyy"
-                >
+                  value-format="yyyy">
                 </el-date-picker>
+                <el-select v-model="typhoonName" placeholder="请选择">
+                  <el-option
+                    v-for="item in options"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.value">
+                  </el-option>
+                </el-select>
               </div>
               <el-menu-item-group>
                 <template slot="title">分组一</template>
@@ -103,6 +110,23 @@ export default {
         zoomOffset: -1,
         accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
       },
+      options: [{
+        value: '选项1',
+        label: '黄金糕'
+      }, {
+        value: '选项2',
+        label: '双皮奶'
+      }, {
+        value: '选项3',
+        label: '蚵仔煎'
+      }, {
+        value: '选项4',
+        label: '龙须面'
+      }, {
+        value: '选项5',
+        label: '北京烤鸭'
+      }],
+      typhoonName: ''
     }
   },
   methods: {
