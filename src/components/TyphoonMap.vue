@@ -12,9 +12,12 @@
               <div class="block">
                 <el-date-picker
                   v-model="yearValue"
+                  @change="getYearValue"
                   type="year"
                   placeholder="选择年"
-                  style="width: auto">
+                  style="width: auto"
+                  value-format="yyyy"
+                >
                 </el-date-picker>
               </div>
               <el-menu-item-group>
@@ -90,7 +93,7 @@ export default {
   components: {},
   data() {
     return {
-      yearValue: '',
+      yearValue: '2021',
       tfmap: null,
       OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
       mapOption: {
@@ -102,17 +105,24 @@ export default {
       },
     }
   },
-  methods: {},
+  methods: {
+    //获取当前用户点击的台风的年份
+    getYearValue() {
+      const selectYear = this.yearValue;
+      window.console.log(selectYear);
+    }
+  },
   // created() {
   //   console.log(this.yearValue);
   // },
   mounted() {
+    window.console.log('年份值：' + this.yearValue);
     this.tfmap = this.$utils.map.createMap("map-container");
     // 设施地图视图 中心位置
     this.tfmap.setView([39.92, 116.46], 3);
     // 加载 open street map和mapbox 图层服务
     this.$utils.map.createTileLayer(this.tfmap, this.OSMUrl, this.mapOption);
-    console.log(this.yearValue);
+    window.console.log(this.yearValue);
   }
 }
 ;
