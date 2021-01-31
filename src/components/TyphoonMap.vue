@@ -103,7 +103,7 @@ export default {
   data() {
     return {
       typhoonNames: {},
-      yearValue: '1990',
+      yearValue: '',
       tfmap: null,
       OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
       mapOption: {
@@ -113,22 +113,7 @@ export default {
         zoomOffset: -1,
         accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
       },
-      options: [{
-        value: '选项1',
-        label: '黄金糕'
-      }, {
-        value: '选项2',
-        label: '双皮奶'
-      }, {
-        value: '选项3',
-        label: '蚵仔煎'
-      }, {
-        value: '选项4',
-        label: '龙须面'
-      }, {
-        value: '选项5',
-        label: '北京烤鸭'
-      }],
+      options: [],
       typhoonName: ''
     }
   },
@@ -154,9 +139,11 @@ export default {
       })
     }
   },
+
   // created() {
   //   console.log(this.yearValue);
   // },
+
   mounted() {
     // window.console.log('年份值：' + this.yearValue);
     this.tfmap = this.$utils.map.createMap("map-container");
