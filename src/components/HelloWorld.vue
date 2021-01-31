@@ -1,5 +1,6 @@
 <template>
   <div class="hello">
+    <h1>{{ responseData }}</h1>
     <h1>{{ msg }}</h1>
     <!-- show books list -->
     <ul>
@@ -19,17 +20,27 @@
       </label><br>
     </form>
     <button type="submit" @click="bookSubmit()">submit</button>
+    <button type="submit" @click="
+const {getTest} = require('../api/api');
+getTest()">get测试
+    </button>
+    <button type="submit" @click="
+const {postTest} = require('../api/api');
+postTest()">post测试
+    </button>
   </div>
 </template>
 
 <script>
 import {getBooks, postBook} from "../api/api";
+import {getTest} from "../api/api"
 
 export default {
   name: 'HelloWorld',
   data() {
     return {
       msg: 'Welcome to Your Vue.js App',
+      responseData: '',
       // books list data
       books: [
         {name: 'test', author: 't'},
@@ -57,6 +68,9 @@ export default {
   },
   created: function () {
     this.loadBooks()
+  },
+  mounted() {
+    this.responseData = getTest();
   }
 }
 </script>

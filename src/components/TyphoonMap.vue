@@ -12,7 +12,7 @@
               <div class="block">
                 <el-date-picker
                   v-model="yearValue"
-                  @change="getYearValue"
+                  @change="getTyphoonNameFromBack"
                   type="year"
                   placeholder="选择年"
                   style="width: auto"
@@ -82,7 +82,7 @@
                 <el-dropdown-item>删除</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
-            <span>台风路径预警系统</span>
+            <span>哈尔滨工业大学（深圳）台风路径预警系统</span>
           </el-header>
 
           <el-main id="mainMapContainer" style="padding: 0">
@@ -95,12 +95,15 @@
 </template>
 
 <script>
+import {postTargetYear} from "../api/api";
+
 export default {
   name: "map",
   components: {},
   data() {
     return {
-      yearValue: '2021',
+      typhoonNames: {},
+      yearValue: '1990',
       tfmap: null,
       OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
       mapOption: {
@@ -130,23 +133,37 @@ export default {
     }
   },
   methods: {
-    //获取当前用户点击的台风的年份
-    getYearValue() {
-      const selectYear = this.yearValue;
-      window.console.log(selectYear);
+    //得到当前用户输入年份对应的台风名称
+    getTyphoonNameFromBack() {
+      let targetYear = this.yearValue;
+      let result = [];
+      var nameArray = [];
+      // 获得后端返回的数据
+      postTargetYear(targetYear).then(_data => {
+        // 后面之所以都要包裹在这个大括号中运行
+        // 是因为如果把nameArray放到括号外就不好使了
+        // 我估计这个可能又是什么回调函数的问题
+        nameArray = [].concat(_data.names);
+        for (let i = 0; i < nameArray.length; i++) {
+          let tmp = {};
+          tmp.value = nameArray[i];
+          tmp.label = nameArray[i];
+          result.push(tmp);
+        }
+        this.options = result;
+      })
     }
   },
   // created() {
   //   console.log(this.yearValue);
   // },
   mounted() {
-    window.console.log('年份值：' + this.yearValue);
+    // window.console.log('年份值：' + this.yearValue);
     this.tfmap = this.$utils.map.createMap("map-container");
     // 设施地图视图 中心位置
     this.tfmap.setView([39.92, 116.46], 3);
     // 加载 open street map和mapbox 图层服务
     this.$utils.map.createTileLayer(this.tfmap, this.OSMUrl, this.mapOption);
-    window.console.log(this.yearValue);
   }
 }
 ;
