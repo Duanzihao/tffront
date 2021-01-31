@@ -11,7 +11,23 @@ const createTileLayer = (map, url, options) => {
   return tileLayer
 }
 
+//向地图添加随意点经纬度提示
+const freeLagLngTip = (myMap) => {
+  const positionPopup = L.popup();
+  myMap.on('click', function (e) {
+    positionPopup.setLatLng(e.latlng)
+      .setContent("你点击在了地图的 " + e.latlng.toString())
+      .openOn(myMap);
+  });
+}
+
+// 添加弹窗
+const addPopup = () => {
+  return L.popup();
+}
+
 export default {
   createMap,
-  createTileLayer
+  createTileLayer,
+  addPopup
 }

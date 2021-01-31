@@ -1,5 +1,5 @@
-import map from "./tfmap";
+import myMap from "./tfmap";
 
 export default {
-  map
+  myMap
 };

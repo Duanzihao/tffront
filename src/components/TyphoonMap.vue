@@ -26,19 +26,8 @@
                     :value="item.value">
                   </el-option>
                 </el-select>
+                <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>
               </div>
-              <el-menu-item-group>
-                <template slot="title">分组一</template>
-                <el-menu-item index="1-1">选项1</el-menu-item>
-                <el-menu-item index="1-2">选项2</el-menu-item>
-              </el-menu-item-group>
-              <el-menu-item-group title="分组2">
-                <el-menu-item index="1-3">选项3</el-menu-item>
-              </el-menu-item-group>
-              <el-submenu index="1-4">
-                <template slot="title">选项4</template>
-                <el-menu-item index="1-4-1">选项4-1</el-menu-item>
-              </el-submenu>
             </el-submenu>
             <el-submenu index="2">
               <template slot="title"><i class="el-icon-menu"></i>台风路径绘制</template>
@@ -86,8 +75,10 @@
           </el-header>
 
           <el-main id="mainMapContainer" style="padding: 0">
-            <div class="map-container" id="map-container"></div>
+            <div class="map-container" id="map-container" v-on:click="clickTest($event)"></div>
           </el-main>
+
+
         </el-container>
       </el-container>
     </div>
@@ -95,15 +86,17 @@
 </template>
 
 <script>
-import {postTargetYear} from "../api/api";
+import {postTargetYear, postTargetTyphoonPath, setTyphoonColor} from "../api/api";
+import L from "leaflet"
+import myMap from "../utils/tfmap";
 
 export default {
   name: "map",
   components: {},
   data() {
     return {
-      typhoonName: '',
-      yearValue: '',
+      typhoonName: '',// 台风名字
+      yearValue: '',// 台风值
       tfmap: null,
       OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
       mapOption: {
@@ -117,6 +110,17 @@ export default {
     }
   },
   methods: {
+    clickTest(e) {
+      window.console.log("地图被点击");
+      // let positionPopup = L.popup();
+      // this.tfmap.on('click', function (e) {
+      //   positionPopup.setLatLng(e.latlng)
+      //     .setContent("你点击在了地图的 " + e.latlng.toString())
+      //     .openOn(this.tfmap);
+      // });
+      window.console.log(e);
+    },
+
     //得到当前用户输入年份对应的台风名称
     getTyphoonNameFromBack() {
       let targetYear = this.yearValue;
@@ -136,6 +140,56 @@ export default {
         }
         this.options = result;
       })
+    },
+    // 点击画图按钮，绘制台风路径曲线
+    drawTyphoonPath() {
+      postTargetTyphoonPath(this.yearValue, this.typhoonName).then(_data => {
+        let myTyphoonPath = _data.rows;
+        let pointCount = 0;
+        let painter = setInterval(function () {
+          console.log('标点计数:' + pointCount);
+          if (pointCount === myTyphoonPath.length) {
+            console.log('计时器关闭');
+            clearInterval(painter);
+          }
+          var powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
+          var circle = L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
+            color: powerColor,
+            fillColor: powerColor,
+            fillOpacity: 0.5,
+            radius: 500
+          }).addTo(this.tfmap).on("click", function (e) {
+            var clickedCircle = e.target;
+            clickedCircle.bindPopup(
+              "台风的信息:" + '<br>' +
+              "<br>位置：" + e.latlng + "</br>" +
+              "<br>时间：" + this.time + "</br>" +
+              "<br>强度：" + this.power + "</br>"
+            ).openPopup();
+          }, myTyphoonPath[pointCount]);
+          //向地图中画线
+          if (pointCount !== 0) {
+            const polygon = L.polygon([
+                [myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng],
+                [myTyphoonPath[pointCount - 1].lat, myTyphoonPath[pointCount - 1].lng]
+              ],
+              {
+                color: 'black'
+              }).addTo(this.tfmap);
+          }
+          pointCount++;
+        }, 300);
+      })
+    },
+
+    // 显示任意位置的经纬度
+    latAndLonTip() {
+      let positionPopup = L.popup();
+      this.tfmap.on('click', function (e) {
+        positionPopup.setLatLng(e.latlng)
+          .setContent("你点击在了地图的 " + e.latlng.toString())
+          .openOn(this.tfmap);
+      });
     }
   },
 
@@ -145,11 +199,28 @@ export default {
 
   mounted() {
     // window.console.log('年份值：' + this.yearValue);
-    this.tfmap = this.$utils.map.createMap("map-container");
-    // 设施地图视图 中心位置
-    this.tfmap.setView([39.92, 116.46], 3);
-    // 加载 open street map和mapbox 图层服务
-    this.$utils.map.createTileLayer(this.tfmap, this.OSMUrl, this.mapOption);
+    // this.tfmap = this.$utils.myMap.createMap("map-container");
+    // // 设施地图视图 中心位置
+    // this.tfmap.setView([39.92, 116.46], 3);
+    // // 加载 open street map和mapbox 图层服务
+    // this.$utils.myMap.createTileLayer(this.tfmap, this.OSMUrl, this.mapOption);
+    // let positionPopup = this.$utils.myMap.addPopup();
+    // window.console.log(typeof positionPopup);
+    // this.tfmap.on('click', function (e) {
+    //   positionPopup.setLatLng(e.latlng)
+    //     .setContent("你点击在了地图的 " + e.latlng.toString())
+    //     .openOn(this.tfmap);
+    // });
+
+
+    this.tfmap = L.map('map-container').setView([39.92, 116.46], 3);
+    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+      attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
+      id: 'mapbox/streets-v11',
+      tileSize: 512,
+      zoomOffset: -1,
+      accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
+    }).addTo(this.tfmap);
   }
 }
 ;
