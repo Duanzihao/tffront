@@ -30,7 +30,11 @@ export const postTest = () => {
 export const postTargetYear = (year) => {
   return axios.post('http://localhost:8000/requesttest/year/', {'year': year}).then(
     (response) => {
-      return response.data;
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
     }
   )
 }
