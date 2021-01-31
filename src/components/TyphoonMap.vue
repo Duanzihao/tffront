@@ -102,7 +102,7 @@ export default {
   components: {},
   data() {
     return {
-      typhoonNames: {},
+      typhoonName: '',
       yearValue: '',
       tfmap: null,
       OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
@@ -114,7 +114,6 @@ export default {
         accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
       },
       options: [],
-      typhoonName: ''
     }
   },
   methods: {
