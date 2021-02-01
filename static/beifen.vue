@@ -77,17 +77,13 @@
           <el-main id="mainMapContainer" style="padding: 0">
             <!--            <div class="map-container" id="map-container" v-on:click="clickTest($event)"></div>-->
             <l-map
+              v-if="showMap"
               :zoom="zoom"
               :center="center"
               :options="mapOptions"
-              style="box-sizing: border-box;
-              padding: 0;
-              position: absolute;
-              width: 84.3%;
-              height: 90%;"
+              style="height: 80%"
               @update:center="centerUpdate"
               @update:zoom="zoomUpdate"
-              @click="addLatLngPopUp"
             >
               <l-tile-layer
                 :url="url"
@@ -125,29 +121,32 @@ export default {
       center: latLng(39.92, 116.46),
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution:
-        '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
+        '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+      withPopup: latLng(47.41322, -1.219482),
+      withTooltip: latLng(47.41422, -1.250482),
+      currentZoom: 11.5,
+      currentCenter: latLng(47.41322, -1.219482),
       mapOptions: {
         zoomSnap: 0.5
       },
+      showMap: true,
+
+
       typhoonName: '',// 台风名字
       yearValue: '',// 台风值
       tfmap: null,
-      // 以下是使用mapbox需要输入的参数，但是现在使用OpenStreet的话就不需要再输入密钥了
-      // OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
-      // mapOption: {
-      //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
-      //   id: 'mapbox/streets-v11',
-      //   tileSize: 512,
-      //   zoomOffset: -1,
-      //   accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
-      // },
+      OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+      mapOption: {
+        attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
+      },
       options: [],
     }
   },
   methods: {
-    addLatLngPopUp(event) {
-      window.console.log(event.latlng)
-    },
     zoomUpdate(zoom) {
       this.currentZoom = zoom;
     },

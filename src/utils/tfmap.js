@@ -1,5 +1,6 @@
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import $L from "leaflet";
 
 const createMap = (divId, options) => {
   return L.map(divId, options)
@@ -29,5 +30,6 @@ const addPopup = () => {
 export default {
   createMap,
   createTileLayer,
-  addPopup
+  addPopup,
+  freeLagLngTip
 }
