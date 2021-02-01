@@ -103,7 +103,6 @@
 import {postTargetYear, postTargetTyphoonPath, setTyphoonColor} from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
-import myMap from "../utils/tfmap";
 import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
 
 export default {
@@ -130,8 +129,6 @@ export default {
         zoomSnap: 0.5
       },
       showMap: true,
-
-
       typhoonName: '',// 台风名字
       yearValue: '',// 台风值
       tfmap: null,
@@ -152,16 +149,6 @@ export default {
     },
     centerUpdate(center) {
       this.currentCenter = center;
-    },
-    clickTest(e) {
-      window.console.log("地图被点击");
-      // let positionPopup = L.popup();
-      // this.tfmap.on('click', function (e) {
-      //   positionPopup.setLatLng(e.latlng)
-      //     .setContent("你点击在了地图的 " + e.latlng.toString())
-      //     .openOn(this.tfmap);
-      // });
-      window.console.log(e);
     },
 
     //得到当前用户输入年份对应的台风名称
@@ -224,38 +211,8 @@ export default {
         }, 300);
       })
     },
-
-    // 显示任意位置的经纬度
-    latAndLonTip() {
-      let positionPopup = L.popup();
-      this.tfmap.on('click', function (e) {
-        positionPopup.setLatLng(e.latlng)
-          .setContent("你点击在了地图的 " + e.latlng.toString())
-          .openOn(this.tfmap);
-      });
-    }
   },
-
-  // created() {
-  //   console.log(this.yearValue);
-  // },
-
   mounted() {
-    // window.console.log('年份值：' + this.yearValue);
-    // this.tfmap = this.$utils.myMap.createMap("map-container");
-    // // 设施地图视图 中心位置
-    // this.tfmap.setView([39.92, 116.46], 3);
-    // // 加载 open street map和mapbox 图层服务
-    // this.$utils.myMap.createTileLayer(this.tfmap, this.OSMUrl, this.mapOption);
-    // let positionPopup = this.$utils.myMap.addPopup();
-    // window.console.log(typeof positionPopup);
-    // this.tfmap.on('click', function (e) {
-    //   positionPopup.setLatLng(e.latlng)
-    //     .setContent("你点击在了地图的 " + e.latlng.toString())
-    //     .openOn(this.tfmap);
-    // });
-
-
     this.tfmap = L.map('map-container').setView([39.92, 116.46], 3);
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
       attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
@@ -265,8 +222,7 @@ export default {
       accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
     }).addTo(this.tfmap);
   }
-}
-;
+};
 </script>
 <style scoped>
 .map-container {

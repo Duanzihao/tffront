@@ -75,25 +75,7 @@
           </el-header>
 
           <el-main id="mainMapContainer" style="padding: 0">
-            <!--            <div class="map-container" id="map-container" v-on:click="clickTest($event)"></div>-->
-            <l-map
-              :zoom="zoom"
-              :center="center"
-              :options="mapOptions"
-              style="box-sizing: border-box;
-              padding: 0;
-              position: absolute;
-              width: 84.3%;
-              height: 90%;"
-              @update:center="centerUpdate"
-              @update:zoom="zoomUpdate"
-              @click="addLatLngPopUp"
-            >
-              <l-tile-layer
-                :url="url"
-                :attribution="attribution"
-              />
-            </l-map>
+            <div class="map-container" id="map-container"></div>
           </el-main>
 
 
@@ -107,11 +89,10 @@
 import {postTargetYear, postTargetTyphoonPath, setTyphoonColor} from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
-import myMap from "../utils/tfmap";
 import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
 
 export default {
-  name: "map",
+  name: "tfmap",
   components: {
     LMap,
     LTileLayer,
@@ -133,38 +114,18 @@ export default {
       yearValue: '',// 台风值
       tfmap: null,
       // 以下是使用mapbox需要输入的参数，但是现在使用OpenStreet的话就不需要再输入密钥了
-      // OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
-      // mapOption: {
-      //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
-      //   id: 'mapbox/streets-v11',
-      //   tileSize: 512,
-      //   zoomOffset: -1,
-      //   accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
-      // },
+      OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
+      mapOption: {
+        attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1,
+        accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
+      },
       options: [],
     }
   },
   methods: {
-    addLatLngPopUp(event) {
-      window.console.log(event.latlng)
-    },
-    zoomUpdate(zoom) {
-      this.currentZoom = zoom;
-    },
-    centerUpdate(center) {
-      this.currentCenter = center;
-    },
-    clickTest(e) {
-      window.console.log("地图被点击");
-      // let positionPopup = L.popup();
-      // this.tfmap.on('click', function (e) {
-      //   positionPopup.setLatLng(e.latlng)
-      //     .setContent("你点击在了地图的 " + e.latlng.toString())
-      //     .openOn(this.tfmap);
-      // });
-      window.console.log(e);
-    },
-
     //得到当前用户输入年份对应的台风名称
     getTyphoonNameFromBack() {
       let targetYear = this.yearValue;
@@ -185,24 +146,32 @@ export default {
         this.options = result;
       })
     },
+
     // 点击画图按钮，绘制台风路径曲线
     drawTyphoonPath() {
+      // 这里的指针一定要变换，因为地图是由vue的this指向的，
+      // 所以后面的指向地图的指针也得是vue的this
+      // 但是到了这些函数里面，
+      // this就变成了这些函数自己的this，
+      // 所以要在下面先声明一个outerThis备份好外面的this
+      // 之后在指向地图的地方使用这个outerThis即可
+      let outerThis = this;
       postTargetTyphoonPath(this.yearValue, this.typhoonName).then(_data => {
         let myTyphoonPath = _data.rows;
         let pointCount = 0;
         let painter = setInterval(function () {
-          console.log('标点计数:' + pointCount);
+          // console.log('标点计数:' + pointCount);
           if (pointCount === myTyphoonPath.length) {
             console.log('计时器关闭');
             clearInterval(painter);
           }
-          var powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
-          var circle = L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
+          let powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
+          let circle = L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
             color: powerColor,
             fillColor: powerColor,
             fillOpacity: 0.5,
             radius: 500
-          }).addTo(this.tfmap).on("click", function (e) {
+          }).addTo(outerThis.tfmap).on("click", function (e) {
             var clickedCircle = e.target;
             clickedCircle.bindPopup(
               "台风的信息:" + '<br>' +
@@ -219,7 +188,7 @@ export default {
               ],
               {
                 color: 'black'
-              }).addTo(this.tfmap);
+              }).addTo(outerThis.tfmap);
           }
           pointCount++;
         }, 300);
@@ -236,26 +205,11 @@ export default {
       });
     }
   },
-
-  // created() {
-  //   console.log(this.yearValue);
-  // },
-
   mounted() {
-    // window.console.log('年份值：' + this.yearValue);
-    // this.tfmap = this.$utils.myMap.createMap("map-container");
-    // // 设施地图视图 中心位置
-    // this.tfmap.setView([39.92, 116.46], 3);
-    // // 加载 open street map和mapbox 图层服务
-    // this.$utils.myMap.createTileLayer(this.tfmap, this.OSMUrl, this.mapOption);
-    // let positionPopup = this.$utils.myMap.addPopup();
-    // window.console.log(typeof positionPopup);
-    // this.tfmap.on('click', function (e) {
-    //   positionPopup.setLatLng(e.latlng)
-    //     .setContent("你点击在了地图的 " + e.latlng.toString())
-    //     .openOn(this.tfmap);
-    // });
-
+    /***
+     * 经度：lng
+     * 纬度：lat
+     */
 
     this.tfmap = L.map('map-container').setView([39.92, 116.46], 3);
     L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -265,6 +219,27 @@ export default {
       zoomOffset: -1,
       accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
     }).addTo(this.tfmap);
+
+    //以下是完全开源不付费的地图，如果看上面的不顺眼，可以使用下面的地图
+    // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
+    //   id: 'mapbox/streets-v11',
+    //   tileSize: 512,
+    //   zoomOffset: -1,
+    // }).addTo(this.tfmap);
+
+    // 点击任意点，显示经纬度信息
+    this.tfmap.on('click', function (e) {
+      let positionPopup = L.popup();
+      positionPopup.setLatLng(e.latlng)
+        .setContent(
+          "<br>你点击在地图的位置为： </br>"
+          + '<br>纬度：' + e.latlng.lat.toString() + '</br>'
+          + '经度：' + e.latlng.lng.toString()
+        )
+        .openOn(this.tfmap);
+      // 下面这个位置一定要传一个this指针进去，要不然会报错
+    }, this);
   }
 }
 ;
