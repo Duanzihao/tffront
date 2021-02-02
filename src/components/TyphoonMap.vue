@@ -28,6 +28,7 @@
                   </el-option>
                 </el-select>
                 <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>
+                <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
               </div>
             </el-submenu>
             <el-submenu index="2">
@@ -111,6 +112,8 @@ export default {
           return time > new Date(JSON.stringify(maxYear)) || time.getTime() < new Date(JSON.stringify(minYear))
         }
       },
+      lineArr24: [],
+      lineArr48: [],
       zoom: 3,
       center: latLng(39.92, 116.46),
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -172,40 +175,63 @@ export default {
         let painter = setInterval(function () {
           // console.log('标点计数:' + pointCount);
           if (pointCount === myTyphoonPath.length) {
-            console.log('计时器关闭');
+            // window.console.log('计时器关闭');
             clearInterval(painter);
+          } else {
+            let powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
+            L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
+              color: powerColor,
+              fillColor: powerColor,
+              fillOpacity: 0.5,
+              radius: 500
+            }).addTo(outerThis.tfmap).on("click", function (e) {
+              let clickedCircle = e.target;
+              let tmpString;
+              if (this.power === 9) {
+                tmpString = '变性';
+              } else tmpString = this.power;
+              clickedCircle.bindPopup(
+                "<br>台风的信息:</br>"
+                + "<br>名称：" + thisTyphoonName + "</br>"
+                + '<br>纬度：' + this.lat.toString() + '</br>'
+                + '<br>经度：' + this.lng.toString() + '</br>'
+                + "<br>时间：" + this.time + "</br>"
+                + "<br>强度：" + tmpString + "</br>"
+              ).openPopup();
+            }, myTyphoonPath[pointCount]);
+
+            // 向地图中画线
+            if (pointCount !== 0) {
+              L.polygon([
+                  [myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng],
+                  [myTyphoonPath[pointCount - 1].lat, myTyphoonPath[pointCount - 1].lng]
+                ],
+                {
+                  color: 'white'
+                }).addTo(outerThis.tfmap);
+            }
+            pointCount++;
           }
-          let powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
-          L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
-            color: powerColor,
-            fillColor: powerColor,
-            fillOpacity: 0.5,
-            radius: 500
-          }).addTo(outerThis.tfmap).on("click", function (e) {
-            let clickedCircle = e.target;
-            clickedCircle.bindPopup(
-              "<br>台风的信息:</br>"
-              + "<br>名称：" + thisTyphoonName + "</br>"
-              + '<br>纬度：' + e.latlng.lat.toString() + '</br>'
-              + '<br>经度：' + e.latlng.lng.toString() + '</br>'
-              + "<br>时间：" + this.time + "</br>"
-              + "<br>强度：" + this.power + "</br>"
-            ).openPopup();
-          }, myTyphoonPath[pointCount]);
-          //向地图中画线
-          if (pointCount !== 0) {
-            L.polygon([
-                [myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng],
-                [myTyphoonPath[pointCount - 1].lat, myTyphoonPath[pointCount - 1].lng]
-              ],
-              {
-                color: 'white'
-              }).addTo(outerThis.tfmap);
-          }
-          pointCount++;
         }, 300);
+        // outerThis.circleGroup = L.layerGroup(outerThis.circleLayer);
+        // outerThis.tfmap.addLayer(outerThis.circleGroup);
       })
     },
+
+    // 清除地图上所有的点和线
+    clearCircles() {
+      let outerThis = this;
+      this.tfmap.eachLayer(function (layer) {
+        // window.console.log(layer);
+        // 底下这个写法是网上剽的，很神奇，按类型去除点
+        if (layer instanceof L.Circle) {
+          outerThis.tfmap.removeLayer(layer);
+        }
+        if (layer instanceof L.Polygon) {
+          outerThis.tfmap.removeLayer(layer);
+        }
+      });
+    }
   },
   mounted() {
     /***
@@ -222,7 +248,7 @@ export default {
       }).setView([20, 125], 3);
     //将图层加载到地图上
     //添加电子地图影像
-    L.tileLayer("http://t1.tianditu.com/img_c/wmts?layer=img&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9", {
+    L.tileLayer("http://t0.tianditu.com/img_c/wmts?layer=img&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9", {
       tileSize: 256,
       zoomOffset: 1,
       attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组'
@@ -233,8 +259,20 @@ export default {
       zoomOffset: 1,
       zIndex: 5,
     }).addTo(this.tfmap);
-
-
+    this.lineArr24 = [[34, 127], [22, 127], [18, 119], [11, 119], [4.5, 113], [0, 105]];//24小时警戒线坐标集合
+    this.lineArr48 = [[34, 132], [15, 132], [0, 120], [0, 105]];//48小时警戒线集合
+    L.polyline(this.lineArr24, {color: 'yellow'}).bindTooltip(
+      "24小时警戒线", {
+        permanent: true,
+        direction: "center",
+        opacity: 0.5
+      }).addTo(this.tfmap);
+    L.polyline(this.lineArr48, {color: 'blue'}).addTo(this.tfmap).bindTooltip(
+      "48小时警戒线", {
+        permanent: true,
+        direction: "center",
+        opacity: 0.5
+      }).addTo(this.tfmap);
     // 使用美国mapbox进行地图显示
     // this.tfmap = L.map('map-container').setView([20, 125], 4);
     // L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
@@ -253,7 +291,7 @@ export default {
     //   zoomOffset: 1
     // }).addTo(this.tfmap);
 
-    //以下是完全开源不付费的 openstreetmap 地图，如果看上面的不顺眼，可以使用下面的地图
+    // 以下是完全开源不付费的 openstreetmap 地图，如果看上面的不顺眼，可以使用下面的地图
     // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
     //   id: 'mapbox/streets-v11',

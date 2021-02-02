@@ -20,14 +20,14 @@
       </label><br>
     </form>
     <button type="submit" @click="bookSubmit()">submit</button>
-    <button type="submit" @click="
-const {getTest} = require('../api/api');
-getTest()">get测试
-    </button>
-    <button type="submit" @click="
-const {postTest} = require('../api/api');
-postTest()">post测试
-    </button>
+    <!--    <button type="submit" @click="-->
+    <!--const {getTest} = require('../api/api');-->
+    <!--getTest()">get测试-->
+    <!--    </button>-->
+    <!--    <button type="submit" @click="-->
+    <!--const {postTest} = require('../api/api');-->
+    <!--postTest()">post测试-->
+    <!--    </button>-->
   </div>
 </template>
 
