@@ -12,6 +12,7 @@
               <div class="block">
                 <el-date-picker
                   v-model="yearValue"
+                  :picker-options="pickerOptions"
                   @change="getTyphoonNameFromBack"
                   type="year"
                   placeholder="选择年"
@@ -102,6 +103,14 @@ export default {
   },
   data() {
     return {
+      pickerOptions: {
+        //disabled为函数，返回值为布尔值，
+        disabledDate: (time) => {
+          let minYear = 1949;
+          let maxYear = 2019;
+          return time > new Date(JSON.stringify(maxYear)) || time.getTime() < new Date(JSON.stringify(minYear))
+        }
+      },
       zoom: 3,
       center: latLng(39.92, 116.46),
       url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -158,6 +167,7 @@ export default {
       let outerThis = this;
       postTargetTyphoonPath(this.yearValue, this.typhoonName).then(_data => {
         let myTyphoonPath = _data.rows;
+        let thisTyphoonName = _data.name;
         let pointCount = 0;
         let painter = setInterval(function () {
           // console.log('标点计数:' + pointCount);
@@ -166,44 +176,36 @@ export default {
             clearInterval(painter);
           }
           let powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
-          let circle = L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
+          L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
             color: powerColor,
             fillColor: powerColor,
             fillOpacity: 0.5,
             radius: 500
           }).addTo(outerThis.tfmap).on("click", function (e) {
-            var clickedCircle = e.target;
+            let clickedCircle = e.target;
             clickedCircle.bindPopup(
-              "台风的信息:" + '<br>' +
-              "<br>位置：" + e.latlng + "</br>" +
-              "<br>时间：" + this.time + "</br>" +
-              "<br>强度：" + this.power + "</br>"
+              "<br>台风的信息:</br>"
+              + "<br>名称：" + thisTyphoonName + "</br>"
+              + '<br>纬度：' + e.latlng.lat.toString() + '</br>'
+              + '<br>经度：' + e.latlng.lng.toString() + '</br>'
+              + "<br>时间：" + this.time + "</br>"
+              + "<br>强度：" + this.power + "</br>"
             ).openPopup();
           }, myTyphoonPath[pointCount]);
           //向地图中画线
           if (pointCount !== 0) {
-            const polygon = L.polygon([
+            L.polygon([
                 [myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng],
                 [myTyphoonPath[pointCount - 1].lat, myTyphoonPath[pointCount - 1].lng]
               ],
               {
-                color: 'black'
+                color: 'white'
               }).addTo(outerThis.tfmap);
           }
           pointCount++;
         }, 300);
       })
     },
-
-    // 显示任意位置的经纬度
-    latAndLonTip() {
-      let positionPopup = L.popup();
-      this.tfmap.on('click', function (e) {
-        positionPopup.setLatLng(e.latlng)
-          .setContent("你点击在了地图的 " + e.latlng.toString())
-          .openOn(this.tfmap);
-      });
-    }
   },
   mounted() {
     /***
@@ -211,16 +213,47 @@ export default {
      * 纬度：lat
      */
 
-    this.tfmap = L.map('map-container').setView([39.92, 116.46], 3);
-    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-      attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
-      id: 'mapbox/streets-v11',
-      tileSize: 512,
-      zoomOffset: -1,
-      accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
+    // 使用天地图遥感影像进行显示
+    this.tfmap = L.map('map-container',
+      {
+        crs: L.CRS.EPSG4326,
+        zoomControl: true,
+        editable: true
+      }).setView([20, 125], 3);
+    //将图层加载到地图上
+    //添加电子地图影像
+    L.tileLayer("http://t1.tianditu.com/img_c/wmts?layer=img&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9", {
+      tileSize: 256,
+      zoomOffset: 1,
+      attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组'
+    }).addTo(this.tfmap);
+    //添加注记
+    L.tileLayer("http://t1.tianditu.com/cva_c/wmts?layer=cva&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9", {
+      tileSize: 256,
+      zoomOffset: 1,
+      zIndex: 5,
     }).addTo(this.tfmap);
 
-    //以下是完全开源不付费的地图，如果看上面的不顺眼，可以使用下面的地图
+
+    // 使用美国mapbox进行地图显示
+    // this.tfmap = L.map('map-container').setView([20, 125], 4);
+    // L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
+    //   id: 'mapbox/satellite-streets-v11',
+    //   tileSize: 512,
+    //   zoomOffset: -1,
+    //   accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
+    // }).addTo(this.tfmap);
+
+    // 天地图普通2D影像渲染
+    // this.tfmap = L.map('map-container', {crs: L.CRS.EPSG4326}).setView([20, 125], 3);
+    // L.tileLayer('http://t0.tianditu.com/img_c/wmts?layer=img&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9', {
+    //   maxZoom: 20,
+    //   tileSize: 256,
+    //   zoomOffset: 1
+    // }).addTo(this.tfmap);
+
+    //以下是完全开源不付费的 openstreetmap 地图，如果看上面的不顺眼，可以使用下面的地图
     // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
     //   id: 'mapbox/streets-v11',
