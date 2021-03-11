@@ -1,8 +1,7 @@
 import axiosInstance from './index'
 
 // var backendUrl = '106.15.170.138' //远程的后端服务器
-var backendUrl = 'localhost' //远程的后端服务器
-
+const backendUrl = 'localhost'; //远程的后端服务器
 
 const axios = axiosInstance
 
@@ -57,6 +56,21 @@ export const postTargetTyphoonPath = (year, name) => {
     }
   )
 }
+
+//获取预测的台风路径信息
+export const postTyphoonPredictPint = (pointList) => {
+  window.console.log(pointList);
+  return axios.post('http://' + backendUrl + ':8000/requesttest/predict/', {'pointList': pointList}).then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
 //设置台风颜色
 export const setTyphoonColor = (typhoonPower) => {
   let powerColor;

@@ -38,12 +38,14 @@
                 <i class="el-icon-menu"></i>手绘台风路径预测
               </template>
               <el-button type="primary" style="width: 200px" @click.native="drawRawPredictTyphoonPath">开始绘图</el-button>
-              <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">结束绘图</el-button>
+              <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
+              <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测
+              </el-button>
             </el-submenu>
 
 
             <el-submenu index="3">
-              <template slot="title"><i class="el-icon-setting"></i>台风路径预测</template>
+              <template slot="title"><i class="el-icon-setting"></i>实时台风路径预测</template>
               <el-menu-item-group>
                 <template slot="title">分组一</template>
                 <el-menu-item index="3-1">选项1</el-menu-item>
@@ -84,7 +86,7 @@
 </template>
 
 <script>
-import {postTargetYear, postTargetTyphoonPath, setTyphoonColor} from "../api/api";
+import {postTargetYear, postTargetTyphoonPath, setTyphoonColor, postTyphoonPredictPint} from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
 import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
@@ -101,6 +103,7 @@ export default {
   },
   data() {
     return {
+      predictPointCount: 0,
       predictFlag: 0,
       clickPointList: [],
       clickLat: 0,
@@ -224,9 +227,8 @@ export default {
       // 绘图之前要有提示，确定之后才能进行
       window.alert("请点击地图上的位置，绘制出路径，之后我们会对路径进行预测");
       this.predictFlag = 1;
-
+      this.clickPointList = [];
     },
-
 
     // 清除地图上所有的点和线
     clearCircles() {
@@ -241,9 +243,51 @@ export default {
           outerThis.tfmap.removeLayer(layer);
         }
       });
+    },
+
+    //结束手绘开始预测
+    endDrawPoint() {
+      this.predictFlag = 0;
+      this.predictPointCount = 0;
+    },
+
+    //进行台风路径预测
+    receiveTyphoonPredictPoint() {
+      let outerThis = this;
+      postTyphoonPredictPint(this.clickPointList).then(_data => {
+        let predictPoint = _data.predictPoint[0];
+        let storePointList = outerThis.clickPointList;
+        let lastPoint = storePointList[storePointList.length - 1];
+        window.console.log(lastPoint);
+        window.console.log(predictPoint);
+
+
+        L.polygon(
+          [
+            [lastPoint[0], lastPoint[1]],
+            [predictPoint[0], predictPoint[1]]
+          ], {
+            weight: 6,
+            opacity: 1,
+            color: 'red'
+          }).addTo(outerThis.tfmap);
+
+        L.circle([predictPoint[0], predictPoint[1]], 30000, {
+          color: 'red',
+          fillColor: 'red',
+          fillOpacity: 0.5,
+          radius: 500
+        }).addTo(outerThis.tfmap).on("click", function (e) {
+          let clickedCircle = e.target;
+          clickedCircle.bindPopup(
+            '<br>纬度：' + predictPoint[0].toString() + '</br>'
+            + '<br>经度：' + predictPoint[1].toString() + '</br>'
+          ).openPopup();
+        });
+
+
+      }, outerThis);
     }
-
-
   },
   mounted() {
     /***
@@ -285,31 +329,6 @@ export default {
         direction: "center",
         opacity: 0.5
       }).addTo(this.tfmap);
-    // 使用美国mapbox进行地图显示
-    // this.tfmap = L.map('map-container').setView([20, 125], 4);
-    // L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-    //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
-    //   id: 'mapbox/satellite-streets-v11',
-    //   tileSize: 512,
-    //   zoomOffset: -1,
-    //   accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
-    // }).addTo(this.tfmap);
-
-    // 天地图普通2D影像渲染
-    // this.tfmap = L.map('map-container', {crs: L.CRS.EPSG4326}).setView([20, 125], 3);
-    // L.tileLayer('http://t0.tianditu.com/img_c/wmts?layer=img&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9', {
-    //   maxZoom: 20,
-    //   tileSize: 256,
-    //   zoomOffset: 1
-    // }).addTo(this.tfmap);
-
-    // 以下是完全开源不付费的 openstreetmap 地图，如果看上面的不顺眼，可以使用下面的地图
-    // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    //   attribution: '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
-    //   id: 'mapbox/streets-v11',
-    //   tileSize: 512,
-    //   zoomOffset: -1,
-    // }).addTo(this.tfmap);
 
     // 点击任意点，显示经纬度信息
     const mountOuterThis = this;
@@ -323,14 +342,40 @@ export default {
         )
         .openOn(mountOuterThis.tfmap);
       // 下面这个位置一定要传一个this指针进去，要不然会报错
+
+      let lat_last_point = mountOuterThis.clickLat;
+      let lng_last_point = mountOuterThis.clickLng;
       mountOuterThis.clickLat = e.latlng.lat;
       mountOuterThis.clickLng = e.latlng.lng;
+      let lat_point_to_paint = mountOuterThis.clickLat;
+      let lng_point_to_paint = mountOuterThis.clickLng;
       // window.console.log(this.clickLat, this.clickLng);
+
+
       let tmp = [mountOuterThis.clickLat, mountOuterThis.clickLng];
+
+
       if (mountOuterThis.predictFlag === 1) {
         mountOuterThis.clickPointList.push(tmp);
         window.console.log(mountOuterThis.clickPointList);
-      }
+        //点击到哪里就在哪里绘图
+        L.circle([lat_point_to_paint, lng_point_to_paint], 30000, {
+          color: "green",
+          fillColor: "white",
+          fillOpacity: 0.5,
+          radius: 500
+        }).addTo(mountOuterThis.tfmap);
+        mountOuterThis.predictPointCount++;
+        if (mountOuterThis.predictPointCount > 1) {
+          L.polygon([
+              [lat_last_point, lng_last_point],
+              [lat_point_to_paint, lng_point_to_paint]
+            ],
+            {
+              color: 'white'
+            }).addTo(mountOuterThis.tfmap);
+        }
+      } else mountOuterThis.predictPointCount = 0;
     }, mountOuterThis);
   }
 }
@@ -362,6 +407,11 @@ export default {
 .tb-edit .current-cell .input-box {
   display: block;
   margin-left: -15px;
+}
+
+.dashLines {
+  stroke-dasharray: 10;
+  stroke: red;
 }
 
 </style>
