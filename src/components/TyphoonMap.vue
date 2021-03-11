@@ -7,7 +7,7 @@
             <el-submenu index="1">
               <template slot="title">
                 <i class="el-icon-message"></i>
-                台风路径选择
+                历史台风路径绘制
               </template>
               <div class="block">
                 <el-date-picker
@@ -31,21 +31,17 @@
                 <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
               </div>
             </el-submenu>
+
+
             <el-submenu index="2">
-              <template slot="title"><i class="el-icon-menu"></i>台风路径绘制</template>
-              <el-menu-item-group>
-                <template slot="title">分组一</template>
-                <el-menu-item index="2-1">选项1</el-menu-item>
-                <el-menu-item index="2-2">选项2</el-menu-item>
-              </el-menu-item-group>
-              <el-menu-item-group title="分组2">
-                <el-menu-item index="2-3">选项3</el-menu-item>
-              </el-menu-item-group>
-              <el-submenu index="2-4">
-                <template slot="title">选项4</template>
-                <el-menu-item index="2-4-1">选项4-1</el-menu-item>
-              </el-submenu>
+              <template slot="title">
+                <i class="el-icon-menu"></i>手绘台风路径预测
+              </template>
+              <el-button type="primary" style="width: 200px" @click.native="drawRawPredictTyphoonPath">开始绘图</el-button>
+              <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">结束绘图</el-button>
             </el-submenu>
+
+
             <el-submenu index="3">
               <template slot="title"><i class="el-icon-setting"></i>台风路径预测</template>
               <el-menu-item-group>
@@ -92,6 +88,7 @@ import {postTargetYear, postTargetTyphoonPath, setTyphoonColor} from "../api/api
 import {latLng} from "leaflet";
 import L from "leaflet";
 import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
+import * as emptransfer from "ant-design-vue";
 
 export default {
   name: "tfmap",
@@ -104,6 +101,10 @@ export default {
   },
   data() {
     return {
+      predictFlag: 0,
+      clickPointList: [],
+      clickLat: 0,
+      clickLng: 0,
       pickerOptions: {
         //disabled为函数，返回值为布尔值，
         disabledDate: (time) => {
@@ -218,6 +219,15 @@ export default {
       })
     },
 
+    // 点击台风预测功能，之后通过手动绘制的点预测台风路径
+    drawRawPredictTyphoonPath() {
+      // 绘图之前要有提示，确定之后才能进行
+      window.alert("请点击地图上的位置，绘制出路径，之后我们会对路径进行预测");
+      this.predictFlag = 1;
+
+    },
+
+
     // 清除地图上所有的点和线
     clearCircles() {
       let outerThis = this;
@@ -232,6 +242,8 @@ export default {
         }
       });
     }
+
+
   },
   mounted() {
     /***
@@ -300,6 +312,7 @@ export default {
     // }).addTo(this.tfmap);
 
     // 点击任意点，显示经纬度信息
+    const mountOuterThis = this;
     this.tfmap.on('click', function (e) {
       let positionPopup = L.popup();
       positionPopup.setLatLng(e.latlng)
@@ -308,9 +321,17 @@ export default {
           + '<br>纬度：' + e.latlng.lat.toString() + '</br>'
           + '经度：' + e.latlng.lng.toString()
         )
-        .openOn(this.tfmap);
+        .openOn(mountOuterThis.tfmap);
       // 下面这个位置一定要传一个this指针进去，要不然会报错
-    }, this);
+      mountOuterThis.clickLat = e.latlng.lat;
+      mountOuterThis.clickLng = e.latlng.lng;
+      // window.console.log(this.clickLat, this.clickLng);
+      let tmp = [mountOuterThis.clickLat, mountOuterThis.clickLng];
+      if (mountOuterThis.predictFlag === 1) {
+        mountOuterThis.clickPointList.push(tmp);
+        window.console.log(mountOuterThis.clickPointList);
+      }
+    }, mountOuterThis);
   }
 }
 ;
@@ -320,7 +341,7 @@ export default {
   box-sizing: border-box;
   padding: 0;
   position: absolute;
-  width: 84.3%;
+  width: 90%;
   height: 90%;
 }
 
@@ -333,4 +354,14 @@ export default {
 .el-aside {
   color: #333;
 }
+
+.tb-edit .input-box {
+  display: none
+}
+
+.tb-edit .current-cell .input-box {
+  display: block;
+  margin-left: -15px;
+}
+
 </style>
