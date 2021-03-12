@@ -35,29 +35,27 @@
 
             <el-submenu index="2">
               <template slot="title">
-                <i class="el-icon-menu"></i>手绘台风路径预测
+                <i class="el-icon-menu"></i>模拟台风路径预测
               </template>
               <el-button type="primary" style="width: 200px" @click.native="drawRawPredictTyphoonPath">开始绘图</el-button>
               <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
-              <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测
-              </el-button>
+              <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
+              <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测</el-button>
             </el-submenu>
 
 
             <el-submenu index="3">
               <template slot="title"><i class="el-icon-setting"></i>实时台风路径预测</template>
-              <el-menu-item-group>
-                <template slot="title">分组一</template>
-                <el-menu-item index="3-1">选项1</el-menu-item>
-                <el-menu-item index="3-2">选项2</el-menu-item>
-              </el-menu-item-group>
-              <el-menu-item-group title="分组2">
-                <el-menu-item index="3-3">选项3</el-menu-item>
-              </el-menu-item-group>
-              <el-submenu index="3-4">
-                <template slot="title">选项4</template>
-                <el-menu-item index="3-4-1">选项4-1</el-menu-item>
-              </el-submenu>
+              <el-button type="primary" style="width: 200px" @click.native="getNewestTyphoonData">获取最新台风信息</el-button>
+              <el-select v-model="typhoonName" placeholder="请选择">
+                <el-option
+                  v-for="item in newestTyphoonList"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value">
+                </el-option>
+              </el-select>
+              <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测</el-button>
             </el-submenu>
           </el-menu>
         </el-aside>
@@ -73,12 +71,9 @@
             </el-dropdown>
             <span>哈尔滨工业大学（深圳）台风路径预警系统</span>
           </el-header>
-
           <el-main id="mainMapContainer" style="padding: 0">
             <div class="map-container" id="map-container"></div>
           </el-main>
-
-
         </el-container>
       </el-container>
     </div>
@@ -86,7 +81,13 @@
 </template>
 
 <script>
-import {postTargetYear, postTargetTyphoonPath, setTyphoonColor, postTyphoonPredictPint} from "../api/api";
+import {
+  postTargetYear,
+  postTargetTyphoonPath,
+  setTyphoonColor,
+  postTyphoonPredictPint,
+  postNewestTyphoonInformation
+} from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
 import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
@@ -103,6 +104,8 @@ export default {
   },
   data() {
     return {
+      ifPredict:false,
+      newestTyphoonList: [],
       predictPointCount: 0,
       predictFlag: 0,
       clickPointList: [],
@@ -232,6 +235,7 @@ export default {
 
     // 清除地图上所有的点和线
     clearCircles() {
+      this.clickPointList = [];
       let outerThis = this;
       this.tfmap.eachLayer(function (layer) {
         // window.console.log(layer);
@@ -284,8 +288,28 @@ export default {
             + '<br>经度：' + predictPoint[1].toString() + '</br>'
           ).openPopup();
         });
+      }, outerThis);
+    },
 
-
+    //获取最新的台风数据
+    getNewestTyphoonData() {
+      let outerThis = this;
+      let nameArray = [];
+      let result = [];
+      postNewestTyphoonInformation().then(_data => {
+        nameArray = [].concat(_data.GET_result);
+        // window.console.log(nameArray);
+        if (nameArray.length === 0) {
+          alert('当前海面上无新台风');
+        } else {
+          for (let i = 0; i < nameArray.length; i++) {
+            let tmp = {};
+            tmp.value = nameArray[i];
+            tmp.label = nameArray[i];
+            result.push(tmp);
+          }
+        }
+        outerThis.newestTyphoonList = result;
       }, outerThis);
     }
   },
@@ -386,7 +410,7 @@ export default {
   box-sizing: border-box;
   padding: 0;
   position: absolute;
-  width: 90%;
+  width: 89.6%;
   height: 90%;
 }
 
@@ -407,6 +431,12 @@ export default {
 .tb-edit .current-cell .input-box {
   display: block;
   margin-left: -15px;
+}
+
+#register {
+  position: absolute;
+  text-align: center;
+  bottom: 0;
 }
 
 .dashLines {

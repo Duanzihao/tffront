@@ -71,6 +71,21 @@ export const postTyphoonPredictPint = (pointList) => {
   )
 }
 
+//获取目前最新的台风信息
+export const postNewestTyphoonInformation = () => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/get_newest_typhoon/').then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
+
 //设置台风颜色
 export const setTyphoonColor = (typhoonPower) => {
   let powerColor;
