@@ -1,7 +1,7 @@
 import axiosInstance from './index'
 
-// var backendUrl = '106.15.170.138' //远程的后端服务器
-const backendUrl = 'localhost'; //远程的后端服务器
+var backendUrl = '106.15.170.138' //远程的后端服务器
+// const backendUrl = 'localhost'; //远程的后端服务器
 
 const axios = axiosInstance
 

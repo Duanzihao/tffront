@@ -3,6 +3,10 @@
     <div>
       <el-container style="height: 100%;border: 1px solid #eee">
         <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+          <!--          <el-radio-group v-model="isCollapse" style="margin-bottom: 20px;">-->
+          <!--            <el-radio-button :label="false">展开</el-radio-button>-->
+          <!--            <el-radio-button :label="true">收起</el-radio-button>-->
+          <!--          </el-radio-group>-->
           <el-menu>
             <el-submenu index="1">
               <template slot="title">
@@ -40,14 +44,15 @@
               <el-button type="primary" style="width: 200px" @click.native="drawRawPredictTyphoonPath">开始绘图</el-button>
               <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
               <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
-              <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测</el-button>
+              <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测
+              </el-button>
             </el-submenu>
 
 
             <el-submenu index="3">
               <template slot="title"><i class="el-icon-setting"></i>实时台风路径预测</template>
               <el-button type="primary" style="width: 200px" @click.native="getNewestTyphoonData">获取最新台风信息</el-button>
-              <el-select v-model="typhoonName" placeholder="请选择">
+              <el-select v-model="newestTyphoonList" placeholder="请选择">
                 <el-option
                   v-for="item in newestTyphoonList"
                   :key="item.value"
@@ -55,8 +60,20 @@
                   :value="item.value">
                 </el-option>
               </el-select>
-              <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测</el-button>
+              <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
+                         @click.native="receiveTyphoonPredictPoint">开始预测
+              </el-button>
             </el-submenu>
+
+
+            <el-submenu index="4">
+              <template slot="title"><i class="el-icon-setting"></i>测距工具</template>
+              <el-button type="primary" style="width: 200px" @click.native="calculateDistanceOfTwoPoint">开始绘图
+              </el-button>
+              <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
+              <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
+            </el-submenu>
+
           </el-menu>
         </el-aside>
         <el-container>
@@ -86,12 +103,14 @@ import {
   postTargetTyphoonPath,
   setTyphoonColor,
   postTyphoonPredictPint,
-  postNewestTyphoonInformation
+  postNewestTyphoonInformation,
 } from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
 import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
 import * as emptransfer from "ant-design-vue";
+import * as leaflet_measure_path from "../api/leaflet-measure-path";
+import * as leaflet_measure_path_css from "../api/leaflet-measure-path.css";
 
 export default {
   name: "tfmap",
@@ -104,7 +123,30 @@ export default {
   },
   data() {
     return {
-      ifPredict:false,
+      // isCollapse: true,
+      existLineOpts: {
+        color: "rgba(255, 58, 0, 1)",
+        weight: 4,
+        opacity: 1,
+        // 是否显示量测信息
+        showMeasurements: true,
+        // 量测信息的属性：
+        measurementOptions: {
+          minDistance: 30 // 显示 最小的线长度为30m(默认)，小于此长度则不显示
+        }
+      },
+      existPolygonOpts: {
+        color: "rgba(0, 58, 255, 0.85)",
+        weight: 2,
+        opacity: 0.85,
+        // 是否显示量测信息
+        showMeasurements: true,
+        // 量测信息的属性：
+        measurementOptions: {
+          showOnHover: true // 开始鼠标移动到图形上时显示量测信息
+        }
+      },
+      ifPredict: true,// true 能点击，false 不能点击
       newestTyphoonList: [],
       predictPointCount: 0,
       predictFlag: 0,
@@ -145,6 +187,13 @@ export default {
     }
   },
   methods: {
+    // handleOpen(key, keyPath) {
+    //   console.log(key, keyPath);
+    // },
+    // handleClose(key, keyPath) {
+    //   console.log(key, keyPath);
+    // },
+
     //得到当前用户输入年份对应的台风名称
     getTyphoonNameFromBack() {
       let targetYear = this.yearValue;
@@ -215,7 +264,7 @@ export default {
                 ],
                 {
                   color: 'white'
-                }).addTo(outerThis.tfmap);
+                }).addTo(outerThis.tfmap).showMeasurements();
             }
             pointCount++;
           }
@@ -229,6 +278,12 @@ export default {
     drawRawPredictTyphoonPath() {
       // 绘图之前要有提示，确定之后才能进行
       window.alert("请点击地图上的位置，绘制出路径，之后我们会对路径进行预测");
+      this.predictFlag = 1;
+      this.clickPointList = [];
+    },
+
+    //点击图中有的点，之后进行测距
+    calculateDistanceOfTwoPoint() {
       this.predictFlag = 1;
       this.clickPointList = [];
     },
@@ -274,7 +329,7 @@ export default {
             weight: 6,
             opacity: 1,
             color: 'red'
-          }).addTo(outerThis.tfmap);
+          }).addTo(outerThis.tfmap).showMeasurements();
 
         L.circle([predictPoint[0], predictPoint[1]], 30000, {
           color: 'red',
@@ -301,6 +356,7 @@ export default {
         // window.console.log(nameArray);
         if (nameArray.length === 0) {
           alert('当前海面上无新台风');
+          outerThis.ifPredict = true;
         } else {
           for (let i = 0; i < nameArray.length; i++) {
             let tmp = {};
@@ -308,8 +364,9 @@ export default {
             tmp.label = nameArray[i];
             result.push(tmp);
           }
+          outerThis.ifPredict = true;
+          outerThis.newestTyphoonList = result;
         }
-        outerThis.newestTyphoonList = result;
       }, outerThis);
     }
   },
@@ -397,7 +454,7 @@ export default {
             ],
             {
               color: 'white'
-            }).addTo(mountOuterThis.tfmap);
+            }).addTo(mountOuterThis.tfmap).showMeasurements();
         }
       } else mountOuterThis.predictPointCount = 0;
     }, mountOuterThis);
@@ -444,4 +501,8 @@ export default {
   stroke: red;
 }
 
+.el-menu-vertical-demo:not(.el-menu--collapse) {
+  width: 200px;
+  min-height: 400px;
+}
 </style>
