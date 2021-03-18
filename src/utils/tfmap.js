@@ -1,5 +1,6 @@
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import $L from "leaflet";
 
 const createMap = (divId, options) => {
   return L.map(divId, options)
@@ -26,8 +27,22 @@ const addPopup = () => {
   return L.popup();
 }
 
+const createPopup = (map, options) => {
+  let popup = $L.popup(options);
+  popup.addTo(map);
+  return popup;
+};
+
+const createLatlonByArray = (coordinate) => {
+  let latlng = $L.latLng(coordinate[0], coordinate[1]);
+  return latlng;
+};
+
 export default {
   createMap,
   createTileLayer,
-  addPopup
+  addPopup,
+  freeLagLngTip,
+  createPopup,
+  createLatlonByArray
 }
