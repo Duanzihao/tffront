@@ -103,6 +103,23 @@ export const postCalculateDTW = (formerYear, formerName, latterYear, latterName)
   )
 }
 
+//寻找出与当前台风最相近的台风，判据为DTW矩阵
+export const postFindNearestDTW = (formerYear, formerName) => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/find_nearest_dtw/', {
+    'formerYear': formerYear,
+    'formerName': formerName,
+  }).then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
 
 //设置台风颜色
 export const setTyphoonColor = (typhoonPower) => {
