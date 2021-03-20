@@ -1,98 +1,278 @@
 <template>
   <div>
     <div>
-      <el-container style="height: 100%;border: 1px solid #eee">
-        <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
-          <!--          <el-radio-group v-model="isCollapse" style="margin-bottom: 20px;">-->
-          <!--            <el-radio-button :label="false">展开</el-radio-button>-->
-          <!--            <el-radio-button :label="true">收起</el-radio-button>-->
-          <!--          </el-radio-group>-->
-          <el-menu>
-            <el-submenu index="1">
-              <template slot="title">
-                <i class="el-icon-message"></i>
-                历史台风路径绘制
-              </template>
-              <div class="block">
-                <el-date-picker
-                  v-model="yearValue"
-                  :picker-options="pickerOptions"
-                  @change="getTyphoonNameFromBack"
-                  type="year"
-                  placeholder="选择年"
-                  style="width: auto"
-                  value-format="yyyy">
-                </el-date-picker>
-                <el-select v-model="typhoonName" placeholder="请选择">
+      <el-container>
+
+
+        <!--        头部-->
+        <el-header style="
+        text-align: center;
+        /*text-opacity: 1;*/
+        font-size: 20px;
+        filter:alpha(Opacity=85);
+        -moz-opacity:0.85;
+        opacity: 0.85;">
+          <div class="note" :style="note"></div>
+          <!--          <div class="pull-height animated" :style="{backgroundImage:'url('+url+')'}" style="background-size: 100% 100%"></div>-->
+          <el-dropdown>
+            <i class="el-icon-setting" style="margin-right: 0;background-image: url(../assets/logo.png)"></i>
+            <el-dropdown-menu slot="dropdown">
+              <!--              <el-dropdown-item>查看</el-dropdown-item>-->
+              <!--              <el-dropdown-item>新增</el-dropdown-item>-->
+              <el-dropdown-item>
+                <p style="text-align: center">
+                  <a class="a" href="http://cs.hitsz.edu.cn/">关于我们</a>
+                </p>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
+          <span style="text-align: center">台风路径预警系统</span>
+        </el-header>
+
+
+        <!--        中间主要部分的容器-->
+        <el-container style="height: 100%;border: 1px solid #eee">
+          <!--          侧边菜单-->
+          <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
+            <!--          <el-radio-group v-model="isCollapse" style="margin-bottom: 20px;">-->
+            <!--            <el-radio-button :label="false">展开</el-radio-button>-->
+            <!--            <el-radio-button :label="true">收起</el-radio-button>-->
+            <!--          </el-radio-group>-->
+            <el-menu>
+              <el-submenu index="1">
+                <template slot="title">
+                  <i class="el-icon-menu"></i>
+                  历史台风路径绘制
+                </template>
+                <div class="block">
+                  <el-date-picker
+                    v-model="yearValue"
+                    :picker-options="pickerOptions"
+                    @change="getTyphoonNameFromBack(yearValue)"
+                    type="year"
+                    placeholder="选择年"
+                    style="width: auto"
+                    value-format="yyyy">
+                  </el-date-picker>
+                  <el-select v-model="typhoonName" placeholder="请选择">
+                    <el-option
+                      v-for="item in options"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.value">
+                    </el-option>
+                  </el-select>
+                  <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>
+                  <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
+                </div>
+              </el-submenu>
+
+
+              <el-submenu index="2">
+                <template slot="title">
+                  <i class="el-icon-menu"></i>模拟台风路径预测
+                </template>
+                <el-button type="primary" style="width: 200px" @click.native="drawRawPredictTyphoonPath">开始绘图
+                </el-button>
+                <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
+                <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
+                <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测
+                </el-button>
+              </el-submenu>
+
+
+              <el-submenu index="3">
+                <template slot="title"><i class="el-icon-menu"></i>实时台风路径预测</template>
+                <el-button type="primary" style="width: 200px" @click.native="getNewestTyphoonData">获取最新台风信息</el-button>
+                <el-select v-model="newestTyphoonList" placeholder="请选择">
                   <el-option
-                    v-for="item in options"
+                    v-for="item in newestTyphoonList"
                     :key="item.value"
                     :label="item.label"
                     :value="item.value">
                   </el-option>
                 </el-select>
-                <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>
-                <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
+                <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
+                           @click.native="receiveTyphoonPredictPoint">开始预测
+                </el-button>
+              </el-submenu>
+
+
+              <el-submenu index="4">
+                <template slot="title"><i class="el-icon-menu"></i>测距工具</template>
+                <el-button type="primary" style="width: 200px" @click.native="calculateDistanceOfTwoPoint">开始绘图
+                </el-button>
+                <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
+                <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
+              </el-submenu>
+
+              <el-submenu index="5">
+                <template slot="title">
+                  <i class="el-icon-menu"></i>台风相似性比较
+                </template>
+                <!--                <el-button type="primary" style="width: 200px" @click.native="">选择历史台风</el-button>-->
+                <el-menu-item-group>
+                  <el-submenu>
+                    <template slot="title">选择历史台风</template>
+
+                    <div class="block">
+                      <el-date-picker
+                        v-model="yearValue"
+                        :picker-options="pickerOptions"
+                        @change="getTyphoonNameFromBack(yearValue)"
+                        type="year"
+                        placeholder="选择年"
+                        style="width: auto"
+                        value-format="yyyy">
+                      </el-date-picker>
+                      <el-select v-model="typhoonName" placeholder="请选择">
+                        <el-option
+                          v-for="item in options"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value">
+                        </el-option>
+                      </el-select>
+                      <!--                  <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>-->
+                      <!--                  <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>-->
+                    </div>
+                    <!--                    <el-popover placement="right" width="400" trigger="click">-->
+                    <!--                      <div class="block">-->
+                    <!--                        <el-date-picker-->
+                    <!--                          v-model="yearValue"-->
+                    <!--                          :picker-options="pickerOptions"-->
+                    <!--                          @change="getTyphoonNameFromBack"-->
+                    <!--                          type="year"-->
+                    <!--                          placeholder="选择年"-->
+                    <!--                          style="width: auto"-->
+                    <!--                          value-format="yyyy">-->
+                    <!--                        </el-date-picker>-->
+                    <!--                        <el-select v-model="typhoonName" placeholder="请选择">-->
+                    <!--                          <el-option-->
+                    <!--                            v-for="item in options"-->
+                    <!--                            :key="item.value"-->
+                    <!--                            :label="item.label"-->
+                    <!--                            :value="item.value">-->
+                    <!--                          </el-option>-->
+                    <!--                        </el-select>-->
+                    <!--                        &lt;!&ndash;                  <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>&ndash;&gt;-->
+                    <!--                        &lt;!&ndash;                  <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>&ndash;&gt;-->
+                    <!--                      </div>-->
+                    <!--                      <el-button slot="reference" type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">选择历史台风</el-button>-->
+                    <!--                    </el-popover>-->
+                  </el-submenu>
+
+
+                </el-menu-item-group>
+
+                <el-menu-item-group>
+                  <el-submenu>
+
+                    <template slot="title">选择海面上最新台风</template>
+                    <el-button type="success" style="width: 200px;margin: 0" @click.native="getNewestTyphoonData">点击获取
+                    </el-button>
+                    <el-select v-model="newestTyphoonList" placeholder="请选择">
+                      <el-option
+                        v-for="item in newestTyphoonList"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value">
+                      </el-option>
+                    </el-select>
+                    <el-button type="primary" style="width: 200px;margin: 0">进行比较</el-button>
+                  </el-submenu>
+                </el-menu-item-group>
+              </el-submenu>
+
+            </el-menu>
+          </el-aside>
+
+          <el-container>
+
+
+            <el-main id="mainMapContainer" style="padding: 0">
+              <div class="map-tool-measure">
+                <ul class="lb_ul">
+                  <!--                  <li class="lb_li" @click="$emit('polyline')">动态线-量测</li>-->
+                  <!--                  <li class="lb_li" @click="$emit('showMeasurements')">显示-量测结果</li>-->
+                  <!--                  <li class="lb_li" @click="$emit('hideMeasurements')">隐藏-量测结果</li>-->
+
+                  <li class="lb_li">
+                    <el-switch
+                      v-model="ifDisplayLatLngTip"
+                      active-text="显示经纬度提示窗"
+                      inactive-text="">
+                    </el-switch>
+                  </li>
+
+
+                  <el-popover placement="bottom"
+                              width="auto"
+                              trigger="click">
+                    <div class="block">
+                      <template>
+                        <el-tabs>
+                          <el-tab-pane label="历史-历史比较" name="first">
+                            <li>请选择一条历史台风</li>
+                            <el-date-picker
+                              v-model="yearValue1"
+                              :picker-options="pickerOptions"
+                              @change="getTyphoonNameFromBack(yearValue1)"
+                              type="year"
+                              placeholder="选择年"
+                              style="width: 250px"
+                              value-format="yyyy">
+                            </el-date-picker>
+                            <el-select v-model="typhoonName" placeholder="请选择" style="width: 250px">
+                              <el-option
+                                v-for="item in options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value">
+                              </el-option>
+                            </el-select>
+
+                            <li>请选择另一条历史台风</li>
+                            <el-date-picker
+                              v-model="yearValue2"
+                              :picker-options="pickerOptions"
+                              @change="getTyphoonNameFromBack(yearValue2)"
+                              type="year"
+                              placeholder="选择年"
+                              style="width: 250px"
+                              value-format="yyyy">
+                            </el-date-picker>
+                            <el-select v-model="typhoonName" placeholder="请选择" style="width: 250px">
+                              <el-option
+                                v-for="item in options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value">
+                              </el-option>
+                            </el-select>
+
+                          </el-tab-pane>
+                          <el-tab-pane label="历史-实时比较" name="second">历史-实时比较</el-tab-pane>
+                          <el-tab-pane label="寻找历史台风的最相似台风" name="third">寻找历史台风的最相似台风</el-tab-pane>
+                          <el-tab-pane label="寻找实时台风的最相似台风" name="fourth">寻找实时台风的最相似台风</el-tab-pane>
+                        </el-tabs>
+                      </template>
+                    </div>
+                    <li class="lb_li" slot="reference">台风相似性比较</li>
+                  </el-popover>
+
+                </ul>
               </div>
-            </el-submenu>
-
-
-            <el-submenu index="2">
-              <template slot="title">
-                <i class="el-icon-menu"></i>模拟台风路径预测
-              </template>
-              <el-button type="primary" style="width: 200px" @click.native="drawRawPredictTyphoonPath">开始绘图</el-button>
-              <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
-              <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
-              <el-button type="success" style="width: 200px;margin: 0" @click.native="receiveTyphoonPredictPoint">开始预测
-              </el-button>
-            </el-submenu>
-
-
-            <el-submenu index="3">
-              <template slot="title"><i class="el-icon-setting"></i>实时台风路径预测</template>
-              <el-button type="primary" style="width: 200px" @click.native="getNewestTyphoonData">获取最新台风信息</el-button>
-              <el-select v-model="newestTyphoonList" placeholder="请选择">
-                <el-option
-                  v-for="item in newestTyphoonList"
-                  :key="item.value"
-                  :label="item.label"
-                  :value="item.value">
-                </el-option>
-              </el-select>
-              <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
-                         @click.native="receiveTyphoonPredictPoint">开始预测
-              </el-button>
-            </el-submenu>
-
-
-            <el-submenu index="4">
-              <template slot="title"><i class="el-icon-setting"></i>测距工具</template>
-              <el-button type="primary" style="width: 200px" @click.native="calculateDistanceOfTwoPoint">开始绘图
-              </el-button>
-              <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
-              <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
-            </el-submenu>
-
-          </el-menu>
-        </el-aside>
-        <el-container>
-          <el-header style="text-align: left; font-size: 20px">
-            <el-dropdown>
-              <i class="el-icon-setting" style="margin-right: 0"></i>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item>查看</el-dropdown-item>
-                <el-dropdown-item>新增</el-dropdown-item>
-                <el-dropdown-item>删除</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <span>哈尔滨工业大学（深圳）台风路径预警系统</span>
-          </el-header>
-          <el-main id="mainMapContainer" style="padding: 0">
-            <div class="map-container" id="map-container"></div>
-          </el-main>
+              <div class="map-container" id="map-container"></div>
+            </el-main>
+          </el-container>
         </el-container>
       </el-container>
+      <div id="register">
+        <p style="text-align: center">
+          <a class="a" href="http://beian.miit.gov.cn">粤ICP备2021023332号-1</a>
+        </p>
+      </div>
     </div>
   </div>
 </template>
@@ -119,10 +299,19 @@ export default {
     LTileLayer,
     LMarker,
     LPopup,
-    LTooltip
+    LTooltip,
+    // MapMeasureDistance
   },
   data() {
     return {
+      note: {
+        backgroundImage: "url(" + require("../assets/typhoon.jpg") + ")",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "25px auto",
+        marginTop: "5px",
+      },
+      url: '',
+      ifDisplayLatLngTip: false,
       // isCollapse: true,
       existLineOpts: {
         color: "rgba(255, 58, 0, 1)",
@@ -165,7 +354,7 @@ export default {
       lineArr48: [],
       zoom: 3,
       center: latLng(39.92, 116.46),
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      // url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       attribution:
         '哈尔滨工业大学（深圳）计算机学院企业智能实验室气象组',
       mapOptions: {
@@ -173,6 +362,8 @@ export default {
       },
       typhoonName: '',// 台风名字
       yearValue: '',// 台风值
+      yearValue1: '',// 台风值
+      yearValue2: '',// 台风值
       tfmap: null,
       // 以下是使用mapbox需要输入的参数，但是现在使用OpenStreet的话就不需要再输入密钥了
       OSMUrl: 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
@@ -195,8 +386,8 @@ export default {
     // },
 
     //得到当前用户输入年份对应的台风名称
-    getTyphoonNameFromBack() {
-      let targetYear = this.yearValue;
+    getTyphoonNameFromBack(yearValue) {
+      let targetYear = yearValue;
       let result = [];
       let nameArray = [];
       // 获得后端返回的数据
@@ -415,13 +606,16 @@ export default {
     const mountOuterThis = this;
     this.tfmap.on('click', function (e) {
       let positionPopup = L.popup();
-      positionPopup.setLatLng(e.latlng)
-        .setContent(
-          "<br>你点击在地图的位置为： </br>"
-          + '<br>纬度：' + e.latlng.lat.toString() + '</br>'
-          + '经度：' + e.latlng.lng.toString()
-        )
-        .openOn(mountOuterThis.tfmap);
+      if (mountOuterThis.ifDisplayLatLngTip === true) {
+        positionPopup.setLatLng(e.latlng)
+          .setContent(
+            "<br>你点击在地图的位置为： </br>"
+            + '<br>纬度：' + e.latlng.lat.toString() + '</br>'
+            + '经度：' + e.latlng.lng.toString()
+          ).openOn(mountOuterThis.tfmap);
+      }
+
+
       // 下面这个位置一定要传一个this指针进去，要不然会报错
 
       let lat_last_point = mountOuterThis.clickLat;
@@ -504,5 +698,39 @@ export default {
 .el-menu-vertical-demo:not(.el-menu--collapse) {
   width: 200px;
   min-height: 400px;
+}
+
+.map-tool-measure {
+  position: absolute;
+  right: 15px;
+  top: 80px;
+  z-index: 999;
+
+  height: 36px;
+  box-shadow: 0px 0px 50px 2px rgba(0, 0, 0, 0.35);
+  background-color: #fff;
+}
+
+.lb_ul {
+  display: flex;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.lb_li {
+  padding: 0 15px;
+  height: 36px;
+  font-size: 13px;
+  line-height: 36px;
+  cursor: pointer;
+}
+
+.lb_li:hover {
+  background-color: rgb(212, 224, 246);
+}
+
+.a {
+  text-decoration: none;
 }
 </style>
