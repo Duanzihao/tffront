@@ -1,7 +1,7 @@
 import axiosInstance from './index'
 
-var backendUrl = '106.15.170.138' //远程的后端服务器
-// const backendUrl = 'localhost'; //远程的后端服务器
+// var backendUrl = '106.15.170.138' //远程的后端服务器
+const backendUrl = 'localhost'; //本地调试的后端服务器
 
 const axios = axiosInstance
 
@@ -75,6 +75,24 @@ export const postTyphoonPredictPint = (pointList) => {
 export const postNewestTyphoonInformation = () => {
   window.console.log();
   return axios.post('http://' + backendUrl + ':8000/requesttest/get_newest_typhoon/').then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+//计算两条台风的DTW矩阵值
+export const postCalculateDTW = (formerYear, formerName, latterYear, latterName) => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/dtw_cal/', {
+    'formerYear': formerYear,
+    'formerName': formerName,
+    'latterYear': latterYear,
+    'latterName': latterName
+  }).then(
     (response) => {
       try {
         return response.data;

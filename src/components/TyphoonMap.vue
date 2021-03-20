@@ -2,8 +2,6 @@
   <div>
     <div>
       <el-container>
-
-
         <!--        头部-->
         <el-header style="
         text-align: center;
@@ -13,12 +11,9 @@
         -moz-opacity:0.85;
         opacity: 0.85;">
           <div class="note" :style="note"></div>
-          <!--          <div class="pull-height animated" :style="{backgroundImage:'url('+url+')'}" style="background-size: 100% 100%"></div>-->
           <el-dropdown>
             <i class="el-icon-setting" style="margin-right: 0;background-image: url(../assets/logo.png)"></i>
             <el-dropdown-menu slot="dropdown">
-              <!--              <el-dropdown-item>查看</el-dropdown-item>-->
-              <!--              <el-dropdown-item>新增</el-dropdown-item>-->
               <el-dropdown-item>
                 <p style="text-align: center">
                   <a class="a" href="http://cs.hitsz.edu.cn/">关于我们</a>
@@ -48,7 +43,7 @@
                   <el-date-picker
                     v-model="yearValue"
                     :picker-options="pickerOptions"
-                    @change="getTyphoonNameFromBack(yearValue)"
+                    @change="getTyphoonNameFromBack(yearValue,0)"
                     type="year"
                     placeholder="选择年"
                     style="width: auto"
@@ -62,7 +57,9 @@
                       :value="item.value">
                     </el-option>
                   </el-select>
-                  <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath">绘制路径动画</el-button>
+                  <el-button type="primary" style="width: 200px" @click.native="drawTyphoonPath(yearValue,typhoonName)">
+                    绘制路径动画
+                  </el-button>
                   <el-button type="danger" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
                 </div>
               </el-submenu>
@@ -112,14 +109,14 @@
                 </template>
                 <!--                <el-button type="primary" style="width: 200px" @click.native="">选择历史台风</el-button>-->
                 <el-menu-item-group>
-                  <el-submenu>
+                  <el-submenu index="5.1">
                     <template slot="title">选择历史台风</template>
 
                     <div class="block">
                       <el-date-picker
                         v-model="yearValue"
                         :picker-options="pickerOptions"
-                        @change="getTyphoonNameFromBack(yearValue)"
+                        @change="getTyphoonNameFromBack(yearValue,0)"
                         type="year"
                         placeholder="选择年"
                         style="width: auto"
@@ -166,7 +163,7 @@
                 </el-menu-item-group>
 
                 <el-menu-item-group>
-                  <el-submenu>
+                  <el-submenu index="5.2">
 
                     <template slot="title">选择海面上最新台风</template>
                     <el-button type="success" style="width: 200px;margin: 0" @click.native="getNewestTyphoonData">点击获取
@@ -193,10 +190,6 @@
             <el-main id="mainMapContainer" style="padding: 0">
               <div class="map-tool-measure">
                 <ul class="lb_ul">
-                  <!--                  <li class="lb_li" @click="$emit('polyline')">动态线-量测</li>-->
-                  <!--                  <li class="lb_li" @click="$emit('showMeasurements')">显示-量测结果</li>-->
-                  <!--                  <li class="lb_li" @click="$emit('hideMeasurements')">隐藏-量测结果</li>-->
-
                   <li class="lb_li">
                     <el-switch
                       v-model="ifDisplayLatLngTip"
@@ -204,8 +197,6 @@
                       inactive-text="">
                     </el-switch>
                   </li>
-
-
                   <el-popover placement="bottom"
                               width="auto"
                               trigger="click">
@@ -217,39 +208,49 @@
                             <el-date-picker
                               v-model="yearValue1"
                               :picker-options="pickerOptions"
-                              @change="getTyphoonNameFromBack(yearValue1)"
+                              @change="getTyphoonNameFromBack(yearValue1,1)"
                               type="year"
                               placeholder="选择年"
                               style="width: 250px"
                               value-format="yyyy">
                             </el-date-picker>
-                            <el-select v-model="typhoonName" placeholder="请选择" style="width: 250px">
+                            <el-select v-model="typhoonName1" placeholder="请选择" style="width: 250px">
                               <el-option
-                                v-for="item in options"
+                                v-for="item in options1"
                                 :key="item.value"
                                 :label="item.label"
                                 :value="item.value">
                               </el-option>
                             </el-select>
+                            <el-button type="primary" style="width: auto"
+                                       @click.native="drawTyphoonPath(yearValue1,typhoonName1)">绘制路径动画
+                            </el-button>
 
                             <li>请选择另一条历史台风</li>
                             <el-date-picker
                               v-model="yearValue2"
                               :picker-options="pickerOptions"
-                              @change="getTyphoonNameFromBack(yearValue2)"
+                              @change="getTyphoonNameFromBack(yearValue2,2)"
                               type="year"
                               placeholder="选择年"
                               style="width: 250px"
                               value-format="yyyy">
                             </el-date-picker>
-                            <el-select v-model="typhoonName" placeholder="请选择" style="width: 250px">
+                            <el-select v-model="typhoonName2" placeholder="请选择" style="width: 250px">
                               <el-option
-                                v-for="item in options"
+                                v-for="item in options2"
                                 :key="item.value"
                                 :label="item.label"
                                 :value="item.value">
                               </el-option>
                             </el-select>
+                            <el-button type="primary" style="width: auto"
+                                       @click.native="drawTyphoonPath(yearValue2,typhoonName2)">绘制路径动画
+                            </el-button>
+                            <li>使用DTW算法计算两条台风的相似程度</li>
+                            <el-button type="success" style="width: auto"
+                                       @click.native="resultOfDTW(yearValue1,typhoonName1,yearValue2,typhoonName2)">开始计算
+                            </el-button>
 
                           </el-tab-pane>
                           <el-tab-pane label="历史-实时比较" name="second">历史-实时比较</el-tab-pane>
@@ -283,7 +284,7 @@ import {
   postTargetTyphoonPath,
   setTyphoonColor,
   postTyphoonPredictPint,
-  postNewestTyphoonInformation,
+  postNewestTyphoonInformation, postCalculateDTW,
 } from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
@@ -361,6 +362,8 @@ export default {
         zoomSnap: 0.5
       },
       typhoonName: '',// 台风名字
+      typhoonName1: '',// 台风名字
+      typhoonName2: '',// 台风名字
       yearValue: '',// 台风值
       yearValue1: '',// 台风值
       yearValue2: '',// 台风值
@@ -375,6 +378,9 @@ export default {
         accessToken: 'pk.eyJ1IjoiZHVhbnppaGFvIiwiYSI6ImNranZkNDZwNjA3dTIycG9hbjR6dGh5c3UifQ.ROEqcBmPSbuqfBW6AQZrYg'
       },
       options: [],
+      options1: [],
+      options2: [],
+
     }
   },
   methods: {
@@ -386,7 +392,7 @@ export default {
     // },
 
     //得到当前用户输入年份对应的台风名称
-    getTyphoonNameFromBack(yearValue) {
+    getTyphoonNameFromBack(yearValue, optionChoose) {
       let targetYear = yearValue;
       let result = [];
       let nameArray = [];
@@ -402,12 +408,25 @@ export default {
           tmp.label = nameArray[i];
           result.push(tmp);
         }
-        this.options = result;
+
+        switch (optionChoose) {
+          case 0:
+            this.options = result;
+            break;
+          case 1:
+            this.options1 = result;
+            break;
+          case 2:
+            this.options2 = result;
+            break;
+          default:
+            break;
+        }
       })
     },
 
     // 点击画图按钮，绘制台风路径曲线
-    drawTyphoonPath() {
+    drawTyphoonPath(yearValue, typhoonName) {
       // 这里的指针一定要变换，因为地图是由vue的this指向的，
       // 所以后面的指向地图的指针也得是vue的this
       // 但是到了这些函数里面，
@@ -415,7 +434,7 @@ export default {
       // 所以要在下面先声明一个outerThis备份好外面的this
       // 之后在指向地图的地方使用这个outerThis即可
       let outerThis = this;
-      postTargetTyphoonPath(this.yearValue, this.typhoonName).then(_data => {
+      postTargetTyphoonPath(yearValue, typhoonName).then(_data => {
         let myTyphoonPath = _data.rows;
         let thisTyphoonName = _data.name;
         let pointCount = 0;
@@ -558,6 +577,16 @@ export default {
           outerThis.ifPredict = true;
           outerThis.newestTyphoonList = result;
         }
+      }, outerThis);
+    },
+
+    //给出计算出的DTW值的提示
+    resultOfDTW(formerYear, formerName, latterYear, latterName) {
+      let outerThis = this;
+      postCalculateDTW(formerYear, formerName, latterYear, latterName).then(_data => {
+        this.$alert('DTW矩阵计算出的值为' + _data.dtw_result, '计算结果', {
+          confirmButtonText: '确定'
+        });
       }, outerThis);
     }
   },
