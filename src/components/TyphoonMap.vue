@@ -24,7 +24,6 @@
           <span style="text-align: center; font-size: 30px;opacity: 1;">台风路径预警系统</span>
         </el-header>
 
-
         <!--        中间主要部分的容器-->
         <el-container style="height: 100%;border: 1px solid #eee">
           <!--          侧边菜单-->
@@ -95,13 +94,10 @@
                 <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
                 <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
               </el-submenu>
-
             </el-menu>
           </el-aside>
 
           <el-container>
-
-
             <el-main id="mainMapContainer" style="padding: 0">
               <div class="map-tool-measure">
                 <ul class="lb_ul">
