@@ -94,11 +94,19 @@
                 <el-button type="danger" style="width: 200px;margin: 0" @click.native="endDrawPoint">结束绘图</el-button>
                 <el-button type="primary" style="width: 200px;margin: 0" @click.native="clearCircles">清除路径点</el-button>
               </el-submenu>
+
+              <el-submenu index="5">
+                <template slot="title"><i class="el-icon-menu"></i>获取卫星云图</template>
+                <el-button type="success" style="width: 200px;margin: 0" @click.native="putTyphoonCloudToMap">点击获取
+                </el-button>
+                <el-button type="danger" style="width: 200px;margin: 0" @click.native="deleteTyphoonCloudToMap">删除图层
+                </el-button>
+              </el-submenu>
             </el-menu>
           </el-aside>
 
           <el-container>
-            <el-main id="mainMapContainer" style="padding: 0">
+            <el-main id="mainMapContainer" class="leaflet-map-pane" style=" padding: 0">
               <div class="map-tool-measure">
                 <ul class="lb_ul">
                   <li class="lb_li">
@@ -327,7 +335,8 @@
                   </el-popover>
                 </ul>
               </div>
-              <div class="map-container" id="map-container"></div>
+              <div class="map-container" id="map-container">
+              </div>
             </el-main>
           </el-container>
         </el-container>
@@ -347,7 +356,7 @@ import {
   postTargetTyphoonPath,
   setTyphoonColor,
   postTyphoonPredictPint,
-  postNewestTyphoonInformation, postCalculateDTW, postFindNearestDTW,
+  postNewestTyphoonInformation, postCalculateDTW, postFindNearestDTW, postNowTyphoonCloud,
 } from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
@@ -368,6 +377,7 @@ export default {
   },
   data() {
     return {
+      imageLayer: Object,
       yearOfToday: '',
       note: {
         backgroundImage: "url(" + require("../assets/typhoon.jpg") + ")",
@@ -665,7 +675,21 @@ export default {
         outerThis.typhoonNameDTW = _data.nearest_name;
         outerThis.yearValueDTW = _data.nearest_year;
       }, outerThis);
+    },
+
+    //点击获取装载的台风云图
+    putTyphoonCloudToMap() {
+      let imageBounds = [[15, 70], [55, 140]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
+      let imageUrl = 'http://localhost:8000/requesttest/now_typhoon_cloud';//图片的地址
+      this.imageLayer = L.imageOverlay(imageUrl, imageBounds, {opacity: 0.5});//opacity是透明度
+      this.tfmap.addLayer(this.imageLayer);
+    },
+
+    //点击清除台风云图
+    deleteTyphoonCloudToMap() {
+      this.tfmap.removeLayer(this.imageLayer);
     }
+
   },
   mounted() {
     /***
@@ -708,6 +732,13 @@ export default {
         direction: "center",
         opacity: 0.5
       }).addTo(this.tfmap);
+
+    // var imageBounds = [[0, 50], [61.148, 180]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
+    // var imageUrl = 'http://typhoon.nmc.cn/weatherservice/imgs/satellite/202103221050_1_0.png';//图片的地址
+    // var imageLayer = L.imageOverlay(imageUrl, imageBounds, {opacity: 0.8});//opacity是透明度
+    // imageLayer.addTo(this.tfmap);
+    // imageLayer.bringToFront();
+
 
     // 点击任意点，显示经纬度信息
     const mountOuterThis = this;

@@ -120,6 +120,20 @@ export const postFindNearestDTW = (formerYear, formerName) => {
   )
 }
 
+//寻找出与当前台风最相近的台风，判据为DTW矩阵
+export const postNowTyphoonCloud = () => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/now_typhoon_cloud/').then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
 
 //设置台风颜色
 export const setTyphoonColor = (typhoonPower) => {
