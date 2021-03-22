@@ -664,7 +664,7 @@ export default {
     //用于寻找与当前台风的历史最相近的台风的DTW值，并给出弹窗的提示
     findNearestDTW(formerYear, formerName) {
       let outerThis = this;
-      this.$alert('计算时间较长，请耐心等待，您可以先使用别的功能我们会弹窗通知您', '提示', {
+      this.$alert('计算时间约为10秒，请稍后', '提示', {
         confirmButtonText: '确定'
       });
       postFindNearestDTW(formerYear, formerName).then(_data => {
@@ -679,7 +679,7 @@ export default {
 
     //点击获取装载的台风云图
     putTyphoonCloudToMap() {
-      let imageBounds = [[15, 70], [55, 140]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
+      let imageBounds = [[14.5, 70], [55, 140]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
       let imageUrl = 'http://localhost:8000/requesttest/now_typhoon_cloud';//图片的地址
       this.imageLayer = L.imageOverlay(imageUrl, imageBounds, {opacity: 0.5});//opacity是透明度
       this.tfmap.addLayer(this.imageLayer);
