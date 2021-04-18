@@ -84,6 +84,21 @@ export const postNewestTyphoonInformation = () => {
     }
   )
 }
+//获取目前最新的台风路径点
+export const postNewestTyphoonInfoById = (id) => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/get_newest_typhoon_by_id/', {'id': id}).then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
+
 //计算两条台风的DTW矩阵值
 export const postCalculateDTW = (formerYear, formerName, latterYear, latterName) => {
   window.console.log();
@@ -120,10 +135,43 @@ export const postFindNearestDTW = (formerYear, formerName) => {
   )
 }
 
+//定制函数，找出与选中的实时台风之间最相近的历史台风
+export const postFindNearestDTWForSelectNow = (nowTyphoonObject) => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/find_nearest_dtw_for_now/', {
+    'nowTyphoonObject': nowTyphoonObject,
+  }).then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
 //寻找出与当前台风最相近的台风，判据为DTW矩阵
 export const postNowTyphoonCloud = () => {
   window.console.log();
   return axios.post('http://' + backendUrl + ':8000/requesttest/now_typhoon_cloud/').then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
+//增加腾讯云短信订阅用户
+export const postIncUser = (userName, userPhone) => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + ':8000/requesttest/inc_user/', {
+    'userPhone': userPhone,
+    'userName': userName
+  }).then(
     (response) => {
       try {
         return response.data;
@@ -140,10 +188,10 @@ export const setTyphoonColor = (typhoonPower) => {
   let powerColor;
   switch (typhoonPower) {
     case 0:
-      powerColor = 'blue';
+      powerColor = 'white';
       break;
     case 1:
-      powerColor = 'green';
+      powerColor = 'blue';
       break;
     case 2:
       powerColor = 'green';
@@ -158,6 +206,38 @@ export const setTyphoonColor = (typhoonPower) => {
       powerColor = 'purple';
       break;
     case 6:
+      powerColor = 'red';
+      break;
+    case 9:
+      powerColor = 'black';
+      break;
+    default:
+      powerColor = 'white';
+      break;
+  }
+  return powerColor;
+}
+
+//设置台风颜色，通过气象局给出的strong属性
+export const setTyphoonColorByStrong = (typhoonPower) => {
+  let powerColor;
+  switch (typhoonPower) {
+    case '热带低压':
+      powerColor = 'green';
+      break;
+    case '热带风暴':
+      powerColor = 'blue';
+      break;
+    case '强热带风暴':
+      powerColor = 'yellow';
+      break;
+    case '台风':
+      powerColor = 'orange';
+      break;
+    case '强台风':
+      powerColor = 'purple';
+      break;
+    case '超强台风':
       powerColor = 'red';
       break;
     case 9:

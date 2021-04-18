@@ -74,7 +74,8 @@
               <el-submenu index="3">
                 <template slot="title"><i class="el-icon-menu"></i>实时台风路径预测</template>
                 <el-button type="primary" style="width: 200px" @click.native="getNewestTyphoonData">获取最新台风信息</el-button>
-                <el-select v-model="newestTyphoonList" placeholder="请选择">
+                <el-select v-model="newestTyphoonName"
+                           placeholder="请选择">
                   <el-option
                     v-for="item in newestTyphoonList"
                     :key="item.value"
@@ -82,8 +83,14 @@
                     :value="item.value">
                   </el-option>
                 </el-select>
+                <el-button type="primary" :disabled="ifPredict" style="width: 200px;margin: 0"
+                           @click.native="drawNewestTyphoonPath">开始绘制
+                </el-button>
                 <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
                            @click.native="receiveTyphoonPredictPoint">开始预测
+                </el-button>
+                <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
+                           @click.native="forecastByDtwForNewTf">dtw预测
                 </el-button>
               </el-submenu>
 
@@ -102,6 +109,15 @@
                 <el-button type="danger" style="width: 200px;margin: 0" @click.native="deleteTyphoonCloudToMap">删除图层
                 </el-button>
               </el-submenu>
+
+              <el-submenu index="6">
+                <template slot="title"><i class="el-icon-menu"></i>订阅预警服务</template>
+                <el-input v-model="userName" tyle="width: 200px;margin: 0" placeholder="请输入姓名"></el-input>
+                <el-input v-model="userPhone" tyle="width: 200px;margin: 0" placeholder="请输入电话号"></el-input>
+                <el-button type="success" style="width: 200px;margin: 0" @click.native="incUser(userName,userPhone)">点击获取
+                </el-button>
+              </el-submenu>
+
             </el-menu>
           </el-aside>
 
@@ -170,6 +186,9 @@
                             <el-button type="success" style="width: auto"
                                        @click.native="resultOfDTW(yearValue1,typhoonName1,yearValue2,typhoonName2)">开始计算
                             </el-button>
+                            <el-button type="danger" style="width: auto;margin: 0" @click.native="clearCircles">清除路径点
+                            </el-button>
+
 
                           </el-tab-pane>
 
@@ -215,6 +234,8 @@
                                        :disabled="ifPredict">
                               开始计算
                             </el-button>
+                            <el-button type="danger" style="width: auto;margin: 0" @click.native="clearCircles">清除路径点
+                            </el-button>
 
 
                           </el-tab-pane>
@@ -245,6 +266,7 @@
                                        @click.native="findNearestDTW(yearValue1,typhoonName1)">开始寻找
                             </el-button>
 
+
                             <li>寻找历史上最相近台风（判据：DTW矩阵）</li>
                             <el-date-picker
                               v-model="yearValueDTW"
@@ -265,7 +287,8 @@
                             <el-button type="primary" style="width: auto"
                                        @click.native="drawTyphoonPath(yearValueDTW,typhoonNameDTW)">绘制路径动画
                             </el-button>
-
+                            <el-button type="danger" style="width: auto;margin: 0" @click.native="clearCircles">清除路径点
+                            </el-button>
 
                           </el-tab-pane>
 
@@ -282,9 +305,7 @@
                                 :value="item.value">
                               </el-option>
                             </el-select>
-                            <el-button type="success" style="width: 200px" :disabled="ifPredict"
-                                       @click.native="findNearestDTW(yearOfToday,newestTyphoonName)">开始寻找
-                            </el-button>
+
 
                             <li>寻找历史上最相近台风（判据：DTW矩阵）</li>
                             <el-date-picker
@@ -306,7 +327,11 @@
                             <el-button type="primary" style="width: auto"
                                        @click.native="drawTyphoonPath(yearValueDTW,typhoonNameDTW)">绘制路径动画
                             </el-button>
-
+                            <el-button type="success" style="width: 200px" :disabled="ifPredict"
+                                       @click.native="forecastByDtwForNewTf">开始寻找
+                            </el-button>
+                            <el-button type="danger" style="width: auto;margin: 0" @click.native="clearCircles">清除路径点
+                            </el-button>
 
                           </el-tab-pane>
                         </el-tabs>
@@ -356,7 +381,12 @@ import {
   postTargetTyphoonPath,
   setTyphoonColor,
   postTyphoonPredictPint,
-  postNewestTyphoonInformation, postCalculateDTW, postFindNearestDTW, postNowTyphoonCloud,
+  postNewestTyphoonInformation,
+  postCalculateDTW,
+  postFindNearestDTW,
+  postNowTyphoonCloud,
+  postNewestTyphoonInfoById,
+  setTyphoonColorByStrong, postFindNearestDTWForSelectNow, postIncUser,
 } from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
@@ -364,6 +394,7 @@ import {LMap, LTileLayer, LMarker, LPopup, LTooltip} from 'vue2-leaflet';
 import * as emptransfer from "ant-design-vue";
 import * as leaflet_measure_path from "../api/leaflet-measure-path";
 import * as leaflet_measure_path_css from "../api/leaflet-measure-path.css";
+import {circleMarker} from "leaflet/dist/leaflet-src.esm";
 
 export default {
   name: "tfmap",
@@ -377,6 +408,10 @@ export default {
   },
   data() {
     return {
+      userName: '',
+      userPhone: '',
+      _result_now: null,
+      hasPutTyphoonCloud: 0,
       imageLayer: Object,
       yearOfToday: '',
       note: {
@@ -413,6 +448,7 @@ export default {
       ifPredict: true,// true 能点击，false 不能点击
       newestTyphoonList: [],
       newestTyphoonName: '',
+      newestTyphoonId: null,
       predictPointCount: 0,
       predictFlag: 0,
       clickPointList: [],
@@ -516,11 +552,11 @@ export default {
             clearInterval(painter);
           } else {
             let powerColor = setTyphoonColor(myTyphoonPath[pointCount].power);
-            L.circle([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], 30000, {
+            L.circleMarker([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], {
               color: powerColor,
               fillColor: powerColor,
               fillOpacity: 0.5,
-              radius: 500
+              radius: 8
             }).addTo(outerThis.tfmap).on("click", function (e) {
               let clickedCircle = e.target;
               let tmpString;
@@ -576,10 +612,13 @@ export default {
       this.tfmap.eachLayer(function (layer) {
         // window.console.log(layer);
         // 底下这个写法是网上剽的，很神奇，按类型去除点
-        if (layer instanceof L.Circle) {
+        if (layer instanceof L.CircleMarker) {
           outerThis.tfmap.removeLayer(layer);
         }
         if (layer instanceof L.Polygon) {
+          outerThis.tfmap.removeLayer(layer);
+        }
+        if (layer instanceof L.Circle) {
           outerThis.tfmap.removeLayer(layer);
         }
       });
@@ -598,8 +637,6 @@ export default {
         let predictPoint = _data.predictPoint[0];
         let storePointList = outerThis.clickPointList;
         let lastPoint = storePointList[storePointList.length - 1];
-        window.console.log(lastPoint);
-        window.console.log(predictPoint);
 
 
         L.polygon(
@@ -612,11 +649,11 @@ export default {
             color: 'red'
           }).addTo(outerThis.tfmap).showMeasurements();
 
-        L.circle([predictPoint[0], predictPoint[1]], 30000, {
+        L.circleMarker([predictPoint[0], predictPoint[1]], {
           color: 'red',
           fillColor: 'red',
           fillOpacity: 0.5,
-          radius: 500
+          radius: 8
         }).addTo(outerThis.tfmap).on("click", function (e) {
           let clickedCircle = e.target;
           clickedCircle.bindPopup(
@@ -633,7 +670,7 @@ export default {
       let nameArray = [];
       let result = [];
       postNewestTyphoonInformation().then(_data => {
-        nameArray = [].concat(_data.GET_result);
+        nameArray = [].concat(_data.GET_result.name);
         // window.console.log(nameArray);
         if (nameArray.length === 0) {
           alert('当前海面上无新台风');
@@ -641,14 +678,130 @@ export default {
         } else {
           for (let i = 0; i < nameArray.length; i++) {
             let tmp = {};
-            tmp.value = nameArray[i];
-            tmp.label = nameArray[i];
+            tmp.value = nameArray[i].toString();
+            tmp.label = nameArray[i].toString();
             result.push(tmp);
           }
-          outerThis.ifPredict = true;
+          outerThis.ifPredict = false;
           outerThis.newestTyphoonList = result;
+          outerThis.newestTyphoonId = _data.GET_result.tfid;
+          //TODO:这里实际还需要做一个东西，就是把台风的名字和对应的id之间要进行绑定，要不然如果海面上有新台风
+          //TODO:就只能点击第一个台风才可以
+          // window.console.log(outerThis.newestTyphoonId)
+          // outerThis.newestTyphoonName = result[0].value;
         }
       }, outerThis);
+    },
+
+    //绘制最新的台风路径
+    drawNewestTyphoonPath() {
+      let outerThis = this;
+      postNewestTyphoonInfoById(outerThis.newestTyphoonId).then(_data => {
+        let _result = _data.GET_result;
+        outerThis._result_now = _data.GET_result;
+        window.console.log(_result);
+        let myTyphoonPath = _result.points;
+        let thisTyphoonName = _result.name;
+        let pointCount = 0;
+        let painter = setInterval(function () {
+          // console.log('标点计数:' + pointCount);
+          if (pointCount === myTyphoonPath.length) {
+            // window.console.log('计时器关闭');
+            clearInterval(painter);
+          } else {
+            let powerColor = setTyphoonColorByStrong(myTyphoonPath[pointCount].strong);
+            L.circleMarker([myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng], {
+              color: powerColor,
+              fillColor: powerColor,
+              fillOpacity: 0.5,
+              radius: 8
+            }).addTo(outerThis.tfmap).on("click", function (e) {
+              let clickedCircle = e.target;
+              let tmpString;
+              if (this.power === 9) {
+                tmpString = '变性';
+              } else tmpString = this.power;
+              let jl_display = '';
+              if (this.jl === null) {
+                jl_display = '无';
+              } else jl_display = this.jl;
+              clickedCircle.bindPopup(
+                "<br>台风的信息:</br>"
+                + "<br>名称：" + thisTyphoonName + "</br>"
+                + '<br>纬度：' + this.lat.toString() + '</br>'
+                + '<br>经度：' + this.lng.toString() + '</br>'
+                + "<br>时间：" + this.time + "</br>"
+                + "<br>强度：" + tmpString + "</br>"
+                + "<br>等级：" + this.strong + "</br>"
+                + "<br>中心移速：" + this.movespeed + "</br>"
+                + "<br>中心移向：" + this.movedirection + "</br>"
+                + "<br>未来趋势：" + jl_display + "</br>"
+              ).openPopup();
+            }, myTyphoonPath[pointCount]);
+
+            // 向地图中画线
+            if (pointCount !== 0) {
+              L.polygon([
+                  [myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng],
+                  [myTyphoonPath[pointCount - 1].lat, myTyphoonPath[pointCount - 1].lng]
+                ],
+                {
+                  color: 'white'
+                }).addTo(outerThis.tfmap).showMeasurements();
+            }
+
+            //如果是最后一个点，同时将预测信息也画出来
+            if (pointCount === myTyphoonPath.length - 1) {
+              //中国
+              outerThis.drawForecastLine(myTyphoonPath, pointCount, 0, outerThis, 'red', thisTyphoonName);
+              //中国台湾
+              outerThis.drawForecastLine(myTyphoonPath, pointCount, 1, outerThis, 'green', thisTyphoonName);
+              //日本
+              outerThis.drawForecastLine(myTyphoonPath, pointCount, 2, outerThis, 'white', thisTyphoonName);
+              //中国香港
+              outerThis.drawForecastLine(myTyphoonPath, pointCount, 3, outerThis, 'purple', thisTyphoonName);
+              //美国
+              outerThis.drawForecastLine(myTyphoonPath, pointCount, 4, outerThis, 'blue', thisTyphoonName);
+            }
+            pointCount++;
+          }
+        }, 300);
+        // postFindNearestDTWForSelectNow(_result).then(_data => {
+        //   window.console.log(_data);
+        // })
+      })
+    },
+
+    //绘制预测曲线
+    drawForecastLine(myTyphoonPath, pointCount, country, outerThis, color, name) {
+      let forecastDataPoints = myTyphoonPath[pointCount].forecast[country].forecastpoints[1];
+      let powerColor = setTyphoonColorByStrong(forecastDataPoints.strong);
+      L.circleMarker([forecastDataPoints.lat, forecastDataPoints.lng], {
+        color: powerColor,
+        fillColor: powerColor,
+        fillOpacity: 0.5,
+        radius: 8
+      }).addTo(outerThis.tfmap).on("click", function (e) {
+        let clickedCircle = e.target;
+        clickedCircle.bindPopup(
+          "<br>" + myTyphoonPath[pointCount].forecast[country].tm + "气象局预测信息:</br>"
+          + "<br>名称：" + name + "</br>"
+          + '<br>纬度：' + forecastDataPoints.lat.toString() + '</br>'
+          + '<br>经度：' + forecastDataPoints.lng.toString() + '</br>'
+          + "<br>时间：" + forecastDataPoints.time + "</br>"
+          + "<br>强度：" + forecastDataPoints.power + "</br>"
+          + "<br>等级：" + forecastDataPoints.strong + "</br>"
+        ).openPopup();
+      }, myTyphoonPath[pointCount]);
+      const dashPolyGon = L.polygon([
+          [myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng],
+          [forecastDataPoints.lat, forecastDataPoints.lng]
+        ],
+        {
+          color: color,
+          dashArray: "3 10",
+        }).addTo(outerThis.tfmap).showMeasurements();
+      outerThis.tfmap.fitBounds(dashPolyGon.getBounds());
     },
 
     //计算出自选的两条台风的的DTW值，并给出弹窗的提示
@@ -668,7 +821,6 @@ export default {
         confirmButtonText: '确定'
       });
       postFindNearestDTW(formerYear, formerName).then(_data => {
-        window.console.log(_data);
         this.$alert('DTW矩阵计算出的值为' + _data.DTW_value, '计算结果', {
           confirmButtonText: '确定'
         });
@@ -677,17 +829,78 @@ export default {
       }, outerThis);
     },
 
+    //利用dtw进行预测
+    forecastByDtwForNewTf() {
+      let outerThis = this;
+      window.console.log(outerThis._result_now)
+      postFindNearestDTWForSelectNow(outerThis._result_now).then(_data => {
+        window.console.log(_data);
+        let old_path = _data.old_path.rows;
+        let now_path = outerThis._result_now.points;
+        let predictPoint = null;
+        if (outerThis._result_now.points.length >= old_path.length) {
+          predictPoint = old_path[old_path.length - 1];
+        } else predictPoint = old_path[now_path.length - 1];
+        L.circleMarker([predictPoint.lat, predictPoint.lng], {
+          color: 'pink',
+          fillColor: 'pink',
+          fillOpacity: 0.5,
+          radius: 8
+        }).addTo(outerThis.tfmap).on("click", function (e) {
+          let clickedCircle = e.target;
+          clickedCircle.bindPopup(
+            "<br>段子豪的预测信息:</br>"
+            + "<br>名称：" + name + "</br>"
+            + '<br>纬度：' + predictPoint.lat.toString() + '</br>'
+            + '<br>经度：' + predictPoint.lng.toString() + '</br>'
+          ).openPopup();
+        });
+        const dashPolyGon = L.polygon([
+            [now_path[now_path.length - 1].lat, now_path[now_path.length - 1].lng],
+            [predictPoint.lat, predictPoint.lng]
+          ],
+          {
+            color: 'pink',
+            dashArray: "3 10",
+          }).addTo(outerThis.tfmap).showMeasurements();
+        outerThis.tfmap.fitBounds(dashPolyGon.getBounds());
+        outerThis.yearValueDTW = _data.nearest_year;
+        outerThis.typhoonNameDTW = _data.nearest_name;
+      })
+    },
+
     //点击获取装载的台风云图
     putTyphoonCloudToMap() {
-      let imageBounds = [[14.5, 70], [55, 140]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
-      let imageUrl = 'http://localhost:8000/requesttest/now_typhoon_cloud';//图片的地址
-      this.imageLayer = L.imageOverlay(imageUrl, imageBounds, {opacity: 0.5});//opacity是透明度
-      this.tfmap.addLayer(this.imageLayer);
+      if (this.hasPutTyphoonCloud === 0) {
+        let imageBounds = [[14.5, 70], [55, 140]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
+        let _1_backendUrl = '106.15.170.138'
+        let _2_backendUrl = 'localhost'
+        let imageUrl = 'http://' + _1_backendUrl + ':8000/requesttest/now_typhoon_cloud';//图片的地址
+        this.imageLayer = L.imageOverlay(imageUrl, imageBounds, {opacity: 0.5});//opacity是透明度
+        this.tfmap.addLayer(this.imageLayer);
+        this.hasPutTyphoonCloud = 1;
+      }
+
     },
 
     //点击清除台风云图
     deleteTyphoonCloudToMap() {
-      this.tfmap.removeLayer(this.imageLayer);
+      if (this.hasPutTyphoonCloud === 1) {
+        this.tfmap.removeLayer(this.imageLayer);
+        this.hasPutTyphoonCloud = 0;
+      }
+    },
+
+    //增加订阅用户数
+    incUser() {
+      let outerThis = this;
+      postIncUser(outerThis.userName, outerThis.userPhone).then(_data => {
+        if (_data.status === 200) {
+          outerThis.$alert('注册成功', '提示', {
+            confirmButtonText: '确定'
+          });
+        }
+      })
     }
 
   },
@@ -714,6 +927,12 @@ export default {
     }).addTo(this.tfmap);
     //添加注记
     L.tileLayer("http://t1.tianditu.com/cva_c/wmts?layer=cva&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9", {
+      tileSize: 256,
+      zoomOffset: 1,
+      zIndex: 5,
+    }).addTo(this.tfmap);
+    //添加全球境界
+    L.tileLayer("http://t1.tianditu.com/ibo_c/wmts?layer=ibo&style=default&tilematrixset=c&Service=WMTS&Request=GetTile&Version=1.0.0&Format=tiles&TileMatrix={z}&TileCol={x}&TileRow={y}&tk=3685d6669a48a505a86e8faff2ae47e9", {
       tileSize: 256,
       zoomOffset: 1,
       zIndex: 5,
@@ -770,13 +989,12 @@ export default {
 
       if (mountOuterThis.predictFlag === 1) {
         mountOuterThis.clickPointList.push(tmp);
-        window.console.log(mountOuterThis.clickPointList);
         //点击到哪里就在哪里绘图
-        L.circle([lat_point_to_paint, lng_point_to_paint], 30000, {
+        L.circleMarker([lat_point_to_paint, lng_point_to_paint], {
           color: "green",
           fillColor: "white",
           fillOpacity: 0.5,
-          radius: 500
+          radius: 8
         }).addTo(mountOuterThis.tfmap);
         mountOuterThis.predictPointCount++;
         if (mountOuterThis.predictPointCount > 1) {
@@ -795,6 +1013,11 @@ export default {
 ;
 </script>
 <style scoped>
+.dashLines {
+  stroke-dasharray: 10;
+  stroke: white;
+}
+
 .map-container {
   box-sizing: border-box;
   padding: 0;
