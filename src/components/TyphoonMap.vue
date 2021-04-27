@@ -29,6 +29,7 @@
           <!--          侧边菜单-->
           <el-aside width="200px" style="background-color: rgb(238, 241, 246)">
             <el-menu>
+
               <el-submenu index="1">
                 <template slot="title">
                   <i class="el-icon-menu"></i>
@@ -114,7 +115,8 @@
                 <template slot="title"><i class="el-icon-menu"></i>订阅预警服务</template>
                 <el-input v-model="userName" tyle="width: 200px;margin: 0" placeholder="请输入姓名"></el-input>
                 <el-input v-model="userPhone" tyle="width: 200px;margin: 0" placeholder="请输入电话号"></el-input>
-                <el-button type="success" style="width: 200px;margin: 0" @click.native="incUser(userName,userPhone)">点击获取
+                <el-button type="success" style="width: 200px;margin: 0" @click.native="incUser(userName,userPhone)">
+                  点击订阅
                 </el-button>
               </el-submenu>
 
@@ -230,7 +232,7 @@
 
                             <li>使用DTW算法计算两条台风的相似程度</li>
                             <el-button type="success" style="width: auto"
-                                       @click.native="resultOfDTW(yearValue1,typhoonName1,yearOfToday,newestTyphoonName)"
+                                       @click.native="calNewestAndHistoryDTW"
                                        :disabled="ifPredict">
                               开始计算
                             </el-button>
@@ -368,7 +370,7 @@
       </el-container>
       <div id="register">
         <p style="text-align: center">
-          <a class="a" href="http://beian.miit.gov.cn">粤ICP备2021023332号-1</a>
+          <a class="a" href="https://beian.miit.gov.cn">粤ICP备2021023332号-1</a>
         </p>
       </div>
     </div>
@@ -386,7 +388,7 @@ import {
   postFindNearestDTW,
   postNowTyphoonCloud,
   postNewestTyphoonInfoById,
-  setTyphoonColorByStrong, postFindNearestDTWForSelectNow, postIncUser,
+  setTyphoonColorByStrong, postFindNearestDTWForSelectNow, postIncUser, postSendMessage, postCalHistoryAndNewestDTW,
 } from "../api/api";
 import {latLng} from "leaflet";
 import L from "leaflet";
@@ -676,6 +678,7 @@ export default {
           alert('当前海面上无新台风');
           outerThis.ifPredict = true;
         } else {
+          window.console.log(nameArray)
           for (let i = 0; i < nameArray.length; i++) {
             let tmp = {};
             tmp.value = nameArray[i].toString();
@@ -762,6 +765,15 @@ export default {
               outerThis.drawForecastLine(myTyphoonPath, pointCount, 3, outerThis, 'purple', thisTyphoonName);
               //美国
               outerThis.drawForecastLine(myTyphoonPath, pointCount, 4, outerThis, 'blue', thisTyphoonName);
+
+              let ShenzhenPosition = L.latLng(22.5, 114.0);
+              let nowTyphoonPosition = L.latLng(myTyphoonPath[pointCount].lat, myTyphoonPath[pointCount].lng);
+              let distance = ShenzhenPosition.distanceTo(nowTyphoonPosition);
+              if (distance / 1000 <= 500) {
+                postSendMessage().then(_data => {
+                  window.console.log('已发送预警短信');
+                });
+              }
             }
             pointCount++;
           }
@@ -829,6 +841,20 @@ export default {
       }, outerThis);
     },
 
+    //用于计算当前台风和历史台风之间的相似度
+    calNewestAndHistoryDTW() {
+      let outerThis = this;
+      postNewestTyphoonInfoById(outerThis.newestTyphoonId).then(_data => {
+        let _result = _data.GET_result;
+        outerThis._result_now = _data.GET_result;
+        postCalHistoryAndNewestDTW(outerThis.yearValue1, outerThis.typhoonName1, outerThis._result_now).then(_dtw_data => {
+          this.$alert('DTW矩阵计算出的值为' + _dtw_data.DTW_value, '计算结果', {
+            confirmButtonText: '确定'
+          });
+        });
+      });
+    },
+
     //利用dtw进行预测
     forecastByDtwForNewTf() {
       let outerThis = this;
@@ -874,8 +900,8 @@ export default {
       if (this.hasPutTyphoonCloud === 0) {
         let imageBounds = [[14.5, 70], [55, 140]];//图片的经纬度范围，西南角点,东北角点(纬度、经度)
         let _1_backendUrl = '106.15.170.138'
-        let _2_backendUrl = 'localhost'
-        let imageUrl = 'http://' + _1_backendUrl + ':8000/requesttest/now_typhoon_cloud';//图片的地址
+        let _2_backendUrl = 'localhost:8000'
+        let imageUrl = 'http://' + _1_backendUrl + '/requesttest/now_typhoon_cloud';//图片的地址
         this.imageLayer = L.imageOverlay(imageUrl, imageBounds, {opacity: 0.5});//opacity是透明度
         this.tfmap.addLayer(this.imageLayer);
         this.hasPutTyphoonCloud = 1;

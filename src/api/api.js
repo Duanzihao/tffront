@@ -1,14 +1,13 @@
 import axiosInstance from './index'
 
-// var backendUrl = '106.15.170.138' //远程的后端服务器
-const backendUrl = 'localhost'; //本地调试的后端服务器
+var backendUrl = '106.15.170.138' //远程的后端服务器
+// const backendUrl = 'localhost:8000'; //本地调试的后端服务器
 
 const axios = axiosInstance
 
 export const getBooks = () => {
   return axios.get('http://' + backendUrl + ':8000/api/books/')
 }
-
 
 export const postBook = (bookName, bookAuthor) => {
   return axios.post('http://' + backendUrl + ':8000/api/books/', {'name': bookName, 'author': bookAuthor})
@@ -34,7 +33,7 @@ export const postTest = () => {
 }
 
 export const postTargetYear = (year) => {
-  return axios.post('http://' + backendUrl + ':8000/requesttest/year/', {'year': year}).then(
+  return axios.post('http://' + backendUrl + '/requesttest/year/', {'year': year}).then(
     (response) => {
       try {
         return response.data;
@@ -46,7 +45,7 @@ export const postTargetYear = (year) => {
 }
 
 export const postTargetTyphoonPath = (year, name) => {
-  return axios.post('http://' + backendUrl + ':8000/requesttest/typhoon_path_data/', {'year': year, 'name': name}).then(
+  return axios.post('http://' + backendUrl + '/requesttest/typhoon_path_data/', {'year': year, 'name': name}).then(
     (response) => {
       try {
         return response.data;
@@ -60,7 +59,7 @@ export const postTargetTyphoonPath = (year, name) => {
 //获取预测的台风路径信息
 export const postTyphoonPredictPint = (pointList) => {
   window.console.log(pointList);
-  return axios.post('http://' + backendUrl + ':8000/requesttest/predict/', {'pointList': pointList}).then(
+  return axios.post('http://' + backendUrl + '/requesttest/predict/', {'pointList': pointList}).then(
     (response) => {
       try {
         return response.data;
@@ -74,7 +73,7 @@ export const postTyphoonPredictPint = (pointList) => {
 //获取目前最新的台风信息
 export const postNewestTyphoonInformation = () => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/get_newest_typhoon/').then(
+  return axios.post('http://' + backendUrl + '/requesttest/get_newest_typhoon/').then(
     (response) => {
       try {
         return response.data;
@@ -87,7 +86,7 @@ export const postNewestTyphoonInformation = () => {
 //获取目前最新的台风路径点
 export const postNewestTyphoonInfoById = (id) => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/get_newest_typhoon_by_id/', {'id': id}).then(
+  return axios.post('http://' + backendUrl + '/requesttest/get_newest_typhoon_by_id/', {'id': id}).then(
     (response) => {
       try {
         return response.data;
@@ -98,11 +97,10 @@ export const postNewestTyphoonInfoById = (id) => {
   )
 }
 
-
 //计算两条台风的DTW矩阵值
 export const postCalculateDTW = (formerYear, formerName, latterYear, latterName) => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/dtw_cal/', {
+  return axios.post('http://' + backendUrl + '/requesttest/dtw_cal/', {
     'formerYear': formerYear,
     'formerName': formerName,
     'latterYear': latterYear,
@@ -121,7 +119,7 @@ export const postCalculateDTW = (formerYear, formerName, latterYear, latterName)
 //寻找出与当前台风最相近的台风，判据为DTW矩阵
 export const postFindNearestDTW = (formerYear, formerName) => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/find_nearest_dtw/', {
+  return axios.post('http://' + backendUrl + '/requesttest/find_nearest_dtw/', {
     'formerYear': formerYear,
     'formerName': formerName,
   }).then(
@@ -138,7 +136,7 @@ export const postFindNearestDTW = (formerYear, formerName) => {
 //定制函数，找出与选中的实时台风之间最相近的历史台风
 export const postFindNearestDTWForSelectNow = (nowTyphoonObject) => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/find_nearest_dtw_for_now/', {
+  return axios.post('http://' + backendUrl + '/requesttest/find_nearest_dtw_for_now/', {
     'nowTyphoonObject': nowTyphoonObject,
   }).then(
     (response) => {
@@ -154,7 +152,7 @@ export const postFindNearestDTWForSelectNow = (nowTyphoonObject) => {
 //寻找出与当前台风最相近的台风，判据为DTW矩阵
 export const postNowTyphoonCloud = () => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/now_typhoon_cloud/').then(
+  return axios.post('http://' + backendUrl + '/requesttest/now_typhoon_cloud/').then(
     (response) => {
       try {
         return response.data;
@@ -168,7 +166,7 @@ export const postNowTyphoonCloud = () => {
 //增加腾讯云短信订阅用户
 export const postIncUser = (userName, userPhone) => {
   window.console.log();
-  return axios.post('http://' + backendUrl + ':8000/requesttest/inc_user/', {
+  return axios.post('http://' + backendUrl + '/requesttest/inc_user/', {
     'userPhone': userPhone,
     'userName': userName
   }).then(
@@ -182,6 +180,39 @@ export const postIncUser = (userName, userPhone) => {
   )
 }
 
+//发送短信给订阅用户
+export const postSendMessage = () => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + '/requesttest/send_emergency_message/').then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
+
+//定制函数，获取当前台风和历史台风之间的DTW值
+export const postCalHistoryAndNewestDTW = (yearValue1, typhoonName1, nowTyphoonObject) => {
+  window.console.log();
+  return axios.post('http://' + backendUrl + '/requesttest/old_and_nearest_dtw_for_now/',
+    {
+      'yearValue1': yearValue1,
+      'typhoonName1': typhoonName1,
+      'nowTyphoonObject': nowTyphoonObject
+    }
+  ).then(
+    (response) => {
+      try {
+        return response.data;
+      } catch (e) {
+        window.console.log(e);
+      }
+    }
+  )
+}
 
 //设置台风颜色
 export const setTyphoonColor = (typhoonPower) => {
