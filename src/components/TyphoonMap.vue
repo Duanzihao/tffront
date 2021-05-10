@@ -88,7 +88,7 @@
                            @click.native="drawNewestTyphoonPath">开始绘制
                 </el-button>
                 <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
-                           @click.native="receiveTyphoonPredictPoint">开始预测
+                           @click.native="forecastByLSTMForNewTf">开始预测
                 </el-button>
                 <el-button type="success" :disabled="ifPredict" style="width: 200px;margin: 0"
                            @click.native="forecastByDtwForNewTf">dtw预测
@@ -635,6 +635,7 @@ export default {
     //进行台风路径预测
     receiveTyphoonPredictPoint() {
       let outerThis = this;
+      window.console.log(this.clickPointList);
       postTyphoonPredictPint(this.clickPointList).then(_data => {
         let predictPoint = _data.predictPoint[0];
         let storePointList = outerThis.clickPointList;
@@ -674,7 +675,7 @@ export default {
       postNewestTyphoonInformation().then(_data => {
         nameArray = [].concat(_data.GET_result.name);
         // window.console.log(nameArray);
-        if (nameArray.length === 0) {
+        if (nameArray.length === 0 || nameArray.length === 1) {
           alert('当前海面上无新台风');
           outerThis.ifPredict = true;
         } else {
@@ -875,7 +876,7 @@ export default {
         }).addTo(outerThis.tfmap).on("click", function (e) {
           let clickedCircle = e.target;
           clickedCircle.bindPopup(
-            "<br>段子豪的预测信息:</br>"
+            "<br>段子豪的DTW预测信息:</br>"
             + "<br>名称：" + name + "</br>"
             + '<br>纬度：' + predictPoint.lat.toString() + '</br>'
             + '<br>经度：' + predictPoint.lng.toString() + '</br>'
@@ -892,6 +893,48 @@ export default {
         outerThis.tfmap.fitBounds(dashPolyGon.getBounds());
         outerThis.yearValueDTW = _data.nearest_year;
         outerThis.typhoonNameDTW = _data.nearest_name;
+      })
+    },
+
+    //利用自己的算法直接进行预测
+    forecastByLSTMForNewTf() {
+      let outerThis = this;
+      window.console.log(outerThis._result_now);
+      let typhoonPath = this._result_now.points;
+      let afterProcessPath = [];
+      for (let i = 0; i < typhoonPath.length; i++) {
+        let tmpList = [];
+        let lat = typhoonPath[i].lat;
+        let lng = typhoonPath[i].lng;
+        tmpList.push(lat);
+        tmpList.push(lng);
+        afterProcessPath.push(tmpList);
+      }
+      postTyphoonPredictPint(afterProcessPath).then(_data => {
+        let predictPoint = _data.predictPoint[0];
+        let lastPoint = tmpList;
+        L.polygon(
+          [
+            [lastPoint[0], lastPoint[1]],
+            [predictPoint[0], predictPoint[1]]
+          ], {
+            weight: 6,
+            opacity: 1,
+            color: 'red'
+          }).addTo(outerThis.tfmap).showMeasurements();
+
+        L.circleMarker([predictPoint[0], predictPoint[1]], {
+          color: 'red',
+          fillColor: 'red',
+          fillOpacity: 0.5,
+          radius: 8
+        }).addTo(outerThis.tfmap).on("click", function (e) {
+          let clickedCircle = e.target;
+          clickedCircle.bindPopup(
+            '<br>纬度：' + predictPoint[0].toString() + '</br>'
+            + '<br>经度：' + predictPoint[1].toString() + '</br>'
+          ).openPopup();
+        });
       })
     },
 
